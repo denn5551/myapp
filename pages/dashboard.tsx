@@ -8,21 +8,25 @@ import Sidebar from '@/components/Sidebar';
 const popularAgents = [
   {
     id: 'asst_jYPLYZOj82vtSYUviIOwAbRx',
+    slug: 'psiholog',
     name: 'ИИ-психолог',
     description: 'Помогает справиться со стрессом и тревогой.',
   },
   {
     id: 'asst_2',
+    slug: 'finansovyj-agent',
     name: 'Финансовый агент',
     description: 'Поможет с бюджетом и подушкой безопасности.',
   },
   {
     id: 'asst_3',
+    slug: 'pomoshhnik-po-gotovke',
     name: 'Помощник по готовке',
     description: 'Подберёт рецепты из ваших продуктов.',
   },
   {
     id: 'asst_4',
+    slug: 'fitnes-trener',
     name: 'Фитнес-тренер',
     description: 'Составит план тренировок дома или в зале.',
   }
@@ -88,7 +92,7 @@ export default function Dashboard() {
           <h3 className="section-title">Популярные помощники</h3>
           <div className="agents-grid">
             {popularAgents.map(agent => (
-              <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+              <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
                 <div className="agent-card">
                   <h4 className="agent-title">{agent.name}</h4>
                   <p className="agent-description">{agent.description}</p>

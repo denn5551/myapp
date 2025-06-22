@@ -68,7 +68,7 @@ export default function AgentsPage() {
 
               <div className="agents-grid">
                 {categoryAgents.slice(0, 4).map(agent => (
-                  <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+                  <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
                     <div className="agent-card">
                       <h3 className="agent-title">{agent.name}</h3>
                       <p className="agent-description">{agent.short || agent.description}</p>
