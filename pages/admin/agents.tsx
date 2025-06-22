@@ -90,7 +90,8 @@ export default function AdminAgentsPage() {
         </button>
       </div>
 
-      <table className="w-full table-auto border-collapse text-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border-collapse text-sm">
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2 text-left">Название</th>
@@ -163,7 +164,8 @@ export default function AdminAgentsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </AdminLayout>
   );
 }
