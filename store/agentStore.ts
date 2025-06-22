@@ -7,6 +7,7 @@ export interface Agent {
   openaiId: string; // OpenAI Assistant ID (редактируемый)
   slug: string; // slug для человекочитаемого URL
   name: string;
+  description?: string;
   short: string;
   full: string;
   categoryId: number;
