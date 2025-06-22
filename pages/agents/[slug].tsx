@@ -2,11 +2,10 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import React from 'react';
-import agents from '../../data/agents.json';
+import { useAgentStore } from '@/store/agentStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import Sidebar from '@/components/Sidebar';
 
-const categories = ['Здоровье', 'Финансы', 'Быт', 'Дети'];
 
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string) => {
@@ -22,7 +21,7 @@ const formatMessageText = (text: string) => {
     // Обрабатываем списки (строки, начинающиеся с -, *, цифры)
     if (trimmedParagraph.includes('\n-') || trimmedParagraph.includes('\n*') || /\n\d+\./.test(trimmedParagraph)) {
       const lines = trimmedParagraph.split('\n');
-      const elements: JSX.Element[] = [];
+      const elements: React.ReactElement[] = [];
       let currentList: string[] = [];
       let currentListType: 'ul' | 'ol' | null = null;
       
@@ -93,11 +92,12 @@ const formatMessageText = (text: string) => {
 
 export default function AgentChat() {
   const router = useRouter();
-  const { id } = router.query;
+  const { slug } = router.query;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
   const [assistantName, setAssistantName] = useState('');
+  const [assistantId, setAssistantId] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,6 +106,7 @@ export default function AgentChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { categories } = useCategoryStore();
+  const { agents } = useAgentStore();
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {
@@ -131,8 +132,8 @@ export default function AgentChat() {
 
   // Загрузка истории сообщений из localStorage (только один раз)
   useEffect(() => {
-    if (router.isReady && typeof id === 'string' && !messagesLoaded) {
-      const saved = localStorage.getItem(`chat_${id}`);
+    if (router.isReady && typeof slug === 'string' && !messagesLoaded) {
+      const saved = localStorage.getItem(`chat_${slug}`);
       if (saved) {
         try {
           setMessages(JSON.parse(saved));
@@ -142,22 +143,23 @@ export default function AgentChat() {
       }
       setMessagesLoaded(true);
     }
-  }, [router.isReady, id, messagesLoaded]);
+  }, [router.isReady, slug, messagesLoaded]);
 
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
-    if (typeof id === 'string' && messagesLoaded) {
-      localStorage.setItem(`chat_${id}`, JSON.stringify(messages));
+    if (typeof slug === 'string' && messagesLoaded) {
+      localStorage.setItem(`chat_${slug}`, JSON.stringify(messages));
     }
-  }, [messages, id, messagesLoaded]);
+  }, [messages, slug, messagesLoaded]);
 
-  // Получение имени ассистента
+  // Получение данных ассистента
   useEffect(() => {
-    if (router.isReady && typeof id === 'string') {
-      const found = agents.find(agent => agent.id === id);
+    if (router.isReady && typeof slug === 'string') {
+      const found = agents.find(agent => agent.slug === slug);
       setAssistantName(found?.name || 'Ассистент');
+      setAssistantId(found?.openaiId || '');
     }
-  }, [router.isReady, id]);
+  }, [router.isReady, slug, agents]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -168,14 +170,14 @@ export default function AgentChat() {
   };
 
   async function sendMessage() {
-    if (!input.trim() || typeof id !== 'string') return;
+    if (!input.trim() || !assistantId) return;
 
     setLoading(true);
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, assistant_id: id }),
+        body: JSON.stringify({ message: input, assistant_id: assistantId }),
       });
 
       if (!res.ok) {
@@ -228,7 +230,7 @@ export default function AgentChat() {
             className="clear-chat-button"
             onClick={() => {
               setMessages([]);
-              localStorage.removeItem(`chat_${id}`);
+              localStorage.removeItem(`chat_${slug}`);
             }}
           >
             Очистить чат

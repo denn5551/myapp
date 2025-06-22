@@ -79,7 +79,7 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 
         <div className="agents-grid">
           {categoryAgents.map(agent => (
-            <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+            <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
               <div className="agent-card">
                 <h4 className="agent-title">{agent.name}</h4>
                 <p className="agent-description">{agent.short}</p>
