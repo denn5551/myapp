@@ -154,12 +154,11 @@ export default function AgentChat() {
 
   // Получение данных ассистента
   useEffect(() => {
-    if (router.isReady && typeof slug === 'string') {
-      const found = agents.find(agent => agent.slug === slug);
-      setAssistantName(found?.name || 'Ассистент');
-      // Поддерживаем старую схему, где OpenAI ID хранился в поле id
-      setAssistantId(found?.openaiId || (found as any)?.id || '');
-    }
+        if (router.isReady && typeof slug === 'string') {
+  const found = agents.find(agent => agent.slug === slug);
+  setAssistantName(found?.name || 'Ассистент');
+  setAssistantId(found?.openaiId || found?.id || '');
+}
   }, [router.isReady, slug, agents]);
 
   const toggleSidebar = () => {
