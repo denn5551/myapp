@@ -157,7 +157,8 @@ export default function AgentChat() {
     if (router.isReady && typeof slug === 'string') {
       const found = agents.find(agent => agent.slug === slug);
       setAssistantName(found?.name || 'Ассистент');
-      setAssistantId(found?.openaiId || '');
+      // Поддерживаем старую схему, где OpenAI ID хранился в поле id
+      setAssistantId(found?.openaiId || (found as any)?.id || '');
     }
   }, [router.isReady, slug, agents]);
 

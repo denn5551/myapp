@@ -13,6 +13,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ error: 'Missing message or assistant_id' });
   }
 
+  if (typeof assistant_id !== 'string' || !assistant_id.startsWith('asst')) {
+    return res.status(400).json({ error: 'Invalid assistant_id format' });
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     return res.status(500).json({ error: 'OpenAI API key not configured' });
   }
