@@ -181,16 +181,16 @@ export default function AgentChat() {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || 'Unknown error');
       }
 
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'user', content: input }, data]);
       setInput('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
-      alert('Произошла ошибка. Проверь API ключ или ID ассистента.');
+      alert(`Произошла ошибка: ${error.message}`);
     }
     setLoading(false);
   }
