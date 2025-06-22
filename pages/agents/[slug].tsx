@@ -154,11 +154,11 @@ export default function AgentChat() {
 
   // Получение данных ассистента
   useEffect(() => {
-    if (router.isReady && typeof slug === 'string') {
-      const found = agents.find(agent => agent.slug === slug);
-      setAssistantName(found?.name || 'Ассистент');
-      setAssistantId(found?.openaiId || '');
-    }
+        if (router.isReady && typeof slug === 'string') {
+  const found = agents.find(agent => agent.slug === slug);
+  setAssistantName(found?.name || 'Ассистент');
+  setAssistantId(found?.openaiId || found?.id || '');
+}
   }, [router.isReady, slug, agents]);
 
   const toggleSidebar = () => {
