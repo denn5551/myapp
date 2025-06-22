@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware';
 export interface Agent {
   id: string; // Внутренний ID для поиска (неизменяемый)
   openaiId: string; // OpenAI Assistant ID (редактируемый)
+  slug: string; // slug для человекочитаемого URL
   name: string;
   short: string;
   full: string;

@@ -9,9 +9,25 @@ export default function AdminAgentsPage() {
   const { agents, addAgent, updateAgent, deleteAgent } = useAgentStore();
   const { categories } = useCategoryStore();
 
+  const slugify = (text: string) => {
+    const map: Record<string, string> = {
+      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
+      к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
+      х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+    };
+    return text
+      .toLowerCase()
+      .split('')
+      .map((ch) => map[ch] ?? ch)
+      .join('')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
   const [newAgent, setNewAgent] = useState({
     openaiId: '', // Изменено с id на openaiId
     name: '',
+    slug: '',
     short: '',
     full: '',
     categoryId: categories[0]?.id || 1, // Используем существующую категорию
@@ -20,12 +36,13 @@ export default function AdminAgentsPage() {
   const handleAdd = () => {
     if (!newAgent.openaiId || !newAgent.name) return;
     addAgent(newAgent);
-    setNewAgent({ 
-      openaiId: '', 
-      name: '', 
-      short: '', 
-      full: '', 
-      categoryId: categories[0]?.id || 1 
+    setNewAgent({
+      openaiId: '',
+      name: '',
+      slug: '',
+      short: '',
+      full: '',
+      categoryId: categories[0]?.id || 1
     });
   };
 
@@ -48,7 +65,13 @@ export default function AdminAgentsPage() {
           className="border p-2 rounded"
           placeholder="Название"
           value={newAgent.name}
-          onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
+          onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value, slug: slugify(e.target.value) })}
+        />
+        <input
+          className="border p-2 rounded"
+          placeholder="Slug"
+          value={newAgent.slug}
+          onChange={(e) => setNewAgent({ ...newAgent, slug: e.target.value })}
         />
         <select
           className="border p-2 rounded"
@@ -84,6 +107,7 @@ export default function AdminAgentsPage() {
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2 text-left">Название</th>
+            <th className="border p-2">Slug</th>
             <th className="border p-2">Категория</th>
             <th className="border p-2">OpenAI ID</th>
             <th className="border p-2">Кратко</th>
@@ -99,6 +123,13 @@ export default function AdminAgentsPage() {
                   className="w-full border px-2 py-1 rounded"
                   value={agent.name}
                   onChange={(e) => updateAgent(agent.id, { name: e.target.value })}
+                />
+              </td>
+              <td className="border p-2">
+                <input
+                  className="w-full border px-2 py-1 rounded"
+                  value={agent.slug}
+                  onChange={(e) => updateAgent(agent.id, { slug: e.target.value })}
                 />
               </td>
               <td className="border p-2">
