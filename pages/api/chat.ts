@@ -13,6 +13,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ error: 'Missing message or assistant_id' });
   }
 
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OpenAI API key not configured' });
+  }
+
   try {
     // Создаём thread
     const threadRes = await fetch('https://api.openai.com/v1/threads', {

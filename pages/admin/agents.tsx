@@ -4,14 +4,17 @@ import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
 import { useAgentStore } from '@/store/agentStore';
 import { useCategoryStore } from '@/store/categoryStore';
+import { slugify } from '@/utils/slugify';
 
 export default function AdminAgentsPage() {
   const { agents, addAgent, updateAgent, deleteAgent } = useAgentStore();
   const { categories } = useCategoryStore();
 
+
   const [newAgent, setNewAgent] = useState({
     openaiId: '', // Изменено с id на openaiId
     name: '',
+    slug: '',
     short: '',
     full: '',
     categoryId: categories[0]?.id || 1, // Используем существующую категорию
@@ -20,12 +23,13 @@ export default function AdminAgentsPage() {
   const handleAdd = () => {
     if (!newAgent.openaiId || !newAgent.name) return;
     addAgent(newAgent);
-    setNewAgent({ 
-      openaiId: '', 
-      name: '', 
-      short: '', 
-      full: '', 
-      categoryId: categories[0]?.id || 1 
+    setNewAgent({
+      openaiId: '',
+      name: '',
+      slug: '',
+      short: '',
+      full: '',
+      categoryId: categories[0]?.id || 1
     });
   };
 
@@ -48,7 +52,13 @@ export default function AdminAgentsPage() {
           className="border p-2 rounded"
           placeholder="Название"
           value={newAgent.name}
-          onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
+          onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value, slug: slugify(e.target.value) })}
+        />
+        <input
+          className="border p-2 rounded"
+          placeholder="Slug"
+          value={newAgent.slug}
+          onChange={(e) => setNewAgent({ ...newAgent, slug: e.target.value })}
         />
         <select
           className="border p-2 rounded"
@@ -80,10 +90,12 @@ export default function AdminAgentsPage() {
         </button>
       </div>
 
-      <table className="w-full table-auto border-collapse text-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border-collapse text-sm">
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2 text-left">Название</th>
+            <th className="border p-2">Slug</th>
             <th className="border p-2">Категория</th>
             <th className="border p-2">OpenAI ID</th>
             <th className="border p-2">Кратко</th>
@@ -99,6 +111,13 @@ export default function AdminAgentsPage() {
                   className="w-full border px-2 py-1 rounded"
                   value={agent.name}
                   onChange={(e) => updateAgent(agent.id, { name: e.target.value })}
+                />
+              </td>
+              <td className="border p-2">
+                <input
+                  className="w-full border px-2 py-1 rounded"
+                  value={agent.slug}
+                  onChange={(e) => updateAgent(agent.id, { slug: e.target.value })}
                 />
               </td>
               <td className="border p-2">
@@ -145,7 +164,8 @@ export default function AdminAgentsPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </AdminLayout>
   );
 }

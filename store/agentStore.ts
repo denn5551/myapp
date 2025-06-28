@@ -1,11 +1,14 @@
 // store/agentStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { slugify } from '@/utils/slugify';
 
 export interface Agent {
   id: string; // Внутренний ID для поиска (неизменяемый)
   openaiId: string; // OpenAI Assistant ID (редактируемый)
+  slug: string; // slug для человекочитаемого URL
   name: string;
+  description?: string;
   short: string;
   full: string;
   categoryId: number;
@@ -23,11 +26,15 @@ export const useAgentStore = create<AgentStore>()(
     (set) => ({
       agents: [],
       addAgent: (agentData) =>
-        set((state) => ({ 
-          agents: [...state.agents, { 
-            ...agentData, 
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9) // Уникальный ID
-          }] 
+        set((state) => ({
+          agents: [
+            ...state.agents,
+            {
+              ...agentData,
+              slug: agentData.slug || slugify(agentData.name),
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9), // Уникальный ID
+            },
+          ],
         })),
       updateAgent: (id, updates) =>
         set((state) => ({
