@@ -1,17 +1,60 @@
-// pages/admin/categories.tsx
-import { useState } from 'react';
+// pages/admin/categories.ts
+
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import { useCategoryStore } from '@/store/categoryStore';
 
 export default function AdminCategoriesPage() {
-  const { categories, addCategory, renameCategory, deleteCategory } = useCategoryStore();
+  const [categories, setCategories] = useState([]);
   const [newName, setNewName] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleAdd = () => {
+  // Получаем категории из базы при загрузке страницы
+  const fetchCategories = async () => {
+    setLoading(true);
+    const res = await fetch('/api/categories');
+    const data = await res.json();
+    setCategories(data.categories || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Добавить категорию
+  const handleAdd = async () => {
     if (!newName.trim()) return;
-    addCategory(newName.trim());
+    await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim(), description: newDesc }),
+    });
     setNewName('');
+    setNewDesc('');
+    fetchCategories();
+  };
+
+  // Переименовать категорию
+  const handleRename = async (id, name, description) => {
+    await fetch('/api/categories', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name, description }),
+    });
+    fetchCategories();
+  };
+
+  // Удалить категорию
+  const handleDelete = async (id) => {
+    if (!window.confirm('Удалить категорию?')) return;
+    await fetch('/api/categories', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    fetchCategories();
   };
 
   return (
@@ -30,6 +73,13 @@ export default function AdminCategoriesPage() {
           value={newName}
           onChange={e => setNewName(e.target.value)}
         />
+        <input
+          type="text"
+          placeholder="Описание"
+          className="border px-3 py-2 rounded w-64"
+          value={newDesc}
+          onChange={e => setNewDesc(e.target.value)}
+        />
         <button
           onClick={handleAdd}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
@@ -38,11 +88,13 @@ export default function AdminCategoriesPage() {
         </button>
       </div>
 
+      {loading && <div className="mb-2 text-gray-500">Загрузка...</div>}
+
       <table className="w-full border-collapse table-auto text-sm">
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2 text-left">Название</th>
-            <th className="border p-2 text-center">Агентов</th>
+            <th className="border p-2 text-left">Описание</th>
             <th className="border p-2 text-center">Действия</th>
           </tr>
         </thead>
@@ -54,13 +106,20 @@ export default function AdminCategoriesPage() {
                   type="text"
                   className="border rounded px-2 py-1 w-full"
                   value={cat.name}
-                  onChange={e => renameCategory(cat.id, e.target.value)}
+                  onChange={e => handleRename(cat.id, e.target.value, cat.description)}
                 />
               </td>
-              <td className="border p-2 text-center">—</td>
+              <td className="border p-2">
+                <input
+                  type="text"
+                  className="border rounded px-2 py-1 w-full"
+                  value={cat.description || ''}
+                  onChange={e => handleRename(cat.id, cat.name, e.target.value)}
+                />
+              </td>
               <td className="border p-2 text-center">
                 <button
-                  onClick={() => deleteCategory(cat.id)}
+                  onClick={() => handleDelete(cat.id)}
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
                 >
                   Удалить
@@ -73,3 +132,4 @@ export default function AdminCategoriesPage() {
     </AdminLayout>
   );
 }
+

@@ -71,7 +71,7 @@ export default function AgentsPage() {
                   <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
                     <div className="agent-card">
                       <h3 className="agent-title">{agent.name}</h3>
-                      <p className="agent-description">{agent.short || agent.description}</p>
+                      <p className="agent-description">{(agent as any).short || (agent as any).description}</p>
                     </div>
                   </Link>
                 ))}
