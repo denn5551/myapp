@@ -1,9 +1,7 @@
 // pages/admin/users.tsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import Link from 'next/link';
-import clsx from 'clsx';
 
 interface User {
   id: number;
@@ -14,35 +12,14 @@ interface User {
   subscriptionEnd: string;
 }
 
-const initialUsers: User[] = [
-  {
-    id: 1,
-    email: 'user1@example.com',
-    registeredAt: '2025-06-10',
-    subscriptionStatus: 'trial',
-    subscriptionStart: '2025-06-10',
-    subscriptionEnd: '2025-06-13',
-  },
-  {
-    id: 2,
-    email: 'user2@example.com',
-    registeredAt: '2025-06-09',
-    subscriptionStatus: 'active',
-    subscriptionStart: '2025-06-09',
-    subscriptionEnd: '2025-07-09',
-  },
-  {
-    id: 3,
-    email: 'user3@example.com',
-    registeredAt: '2025-06-01',
-    subscriptionStatus: 'expired',
-    subscriptionStart: '2025-06-01',
-    subscriptionEnd: '2025-06-04',
-  },
-];
-
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then(res => res.json())
+      .then(data => setUsers(data.users || []));
+  }, []);
 
   const handleStatusChange = (id: number, newStatus: User['subscriptionStatus']) => {
     setUsers(prev =>
