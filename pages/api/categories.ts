@@ -10,9 +10,26 @@ export default function handler(req, res) {
   }
   const db = new Database('./data/users.db');
 
-  // Получить все категории
+  // Получить категории
   if (req.method === 'GET') {
-    const categories = db.prepare('SELECT * FROM agent_categories').all();
+    const { limit, offset = 0, name } = req.query as any;
+
+    if (name) {
+      const category = db
+        .prepare('SELECT * FROM agent_categories WHERE name = ?')
+        .get(name);
+      return res.status(200).json({ category });
+    }
+
+    let query = 'SELECT * FROM agent_categories';
+    const params: any[] = [];
+
+    if (limit) {
+      query += ' LIMIT ? OFFSET ?';
+      params.push(Number(limit), Number(offset));
+    }
+
+    const categories = db.prepare(query).all(...params);
     return res.status(200).json({ categories });
   }
 

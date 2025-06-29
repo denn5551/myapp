@@ -15,25 +15,58 @@ export default function AgentPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const { categories } = useCategoryStore();
-  const { agents } = useAgentStore();
+  const { categories, setCategories } = useCategoryStore();
+  const { setAgents } = useAgentStore();
 
   const [categoryAgents, setCategoryAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
 const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 };
 
+  const loadAgents = async (
+    categoryId: number,
+    limit: number,
+    offset = 0,
+    replace = false
+  ) => {
+    const res = await fetch(
+      `/api/agents?categoryId=${categoryId}&limit=${limit}&offset=${offset}`
+    );
+    const data = await res.json();
+    const agents = data.agents || [];
+    setCategoryAgents(prev => (replace ? agents : [...prev, ...agents]));
+    if (agents.length < limit) setHasMore(false);
+  };
+
+  const loadMore = async () => {
+    if (!categories[0]) return;
+    setLoadingMore(true);
+    await loadAgents(categories[0].id, 10, (page + 1) * 10);
+    setPage(prev => prev + 1);
+    setLoadingMore(false);
+  };
+
   useEffect(() => {
-    if (router.isReady && router.query.name && agents.length > 0) {
-      const categoryName = Array.isArray(router.query.name) ? router.query.name[0] : router.query.name;
-      const currentCategory = categories.find(cat => cat.name === categoryName);
-      const categoryId = currentCategory?.id;
-      const filtered = agents.filter(agent => agent.categoryId === categoryId);
-      setCategoryAgents(filtered);
-      setLoading(false);
-    }
-  }, [router.isReady, router.query.name, agents, categories]);
+    if (!router.isReady || !router.query.name) return;
+
+    const categoryName = Array.isArray(router.query.name)
+      ? router.query.name[0]
+      : router.query.name;
+
+    fetch(`/api/categories?name=${encodeURIComponent(categoryName as string)}`)
+      .then(res => res.json())
+      .then(async data => {
+        if (data.category) {
+          setCategories([data.category]);
+          await loadAgents(data.category.id, 10, 0, true);
+        }
+        setLoading(false);
+      });
+  }, [router.isReady, router.query.name, setCategories]);
 
   useEffect(() => {
     fetch('/api/me')
@@ -79,14 +112,22 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 
         <div className="agents-grid">
           {categoryAgents.map(agent => (
-            <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+            <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
               <div className="agent-card">
                 <h4 className="agent-title">{agent.name}</h4>
-                <p className="agent-description">{agent.short}</p>
+                <p className="agent-description">{agent.short_description || agent.description}</p>
               </div>
             </Link>
           ))}
         </div>
+
+        {hasMore && (
+          <div className="text-center mt-4">
+            <button onClick={loadMore} disabled={loadingMore} className="see-all-button">
+              {loadingMore ? 'Загрузка...' : 'Загрузить ещё'}
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

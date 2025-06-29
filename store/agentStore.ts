@@ -16,6 +16,7 @@ interface AgentStore {
   addAgent: (agent: Omit<Agent, 'id'>) => void; // ID генерируется автоматически
   updateAgent: (id: string, updates: Partial<Omit<Agent, 'id'>>) => void; // ID нельзя изменить
   deleteAgent: (id: string) => void;
+  setAgents: (agents: Agent[]) => void;
 }
 
 export const useAgentStore = create<AgentStore>()(
@@ -38,6 +39,10 @@ export const useAgentStore = create<AgentStore>()(
       deleteAgent: (id) =>
         set((state) => ({
           agents: state.agents.filter((agent) => agent.id !== id),
+        })),
+      setAgents: (agents) =>
+        set(() => ({
+          agents,
         })),
     }),
     {
