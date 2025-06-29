@@ -3,11 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import React from 'react';
-import agents from '../../data/agents.json';
-import { useCategoryStore } from '@/store/categoryStore';
 import Sidebar from '@/components/Sidebar';
-
-const categories = ['Здоровье', 'Финансы', 'Быт', 'Дети'];
 
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string) => {
@@ -94,11 +90,12 @@ const formatMessageText = (text: string) => {
 
 export default function AgentChat() {
   const router = useRouter();
-  const { id } = router.query;
+  const { slug } = router.query;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
   const [assistantName, setAssistantName] = useState('');
+  const [assistantId, setAssistantId] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,7 +103,6 @@ export default function AgentChat() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { categories } = useCategoryStore();
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {
@@ -132,8 +128,8 @@ export default function AgentChat() {
 
   // Загрузка истории сообщений из localStorage (только один раз)
   useEffect(() => {
-    if (router.isReady && typeof id === 'string' && !messagesLoaded) {
-      const saved = localStorage.getItem(`chat_${id}`);
+    if (router.isReady && typeof slug === 'string' && !messagesLoaded) {
+      const saved = localStorage.getItem(`chat_${slug}`);
       if (saved) {
         try {
           setMessages(JSON.parse(saved));
@@ -143,22 +139,29 @@ export default function AgentChat() {
       }
       setMessagesLoaded(true);
     }
-  }, [router.isReady, id, messagesLoaded]);
+  }, [router.isReady, slug, messagesLoaded]);
 
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
-    if (typeof id === 'string' && messagesLoaded) {
-      localStorage.setItem(`chat_${id}`, JSON.stringify(messages));
+    if (typeof slug === 'string' && messagesLoaded) {
+      localStorage.setItem(`chat_${slug}`, JSON.stringify(messages));
     }
-  }, [messages, id, messagesLoaded]);
+  }, [messages, slug, messagesLoaded]);
 
-  // Получение имени ассистента
+  // Получение информации об ассистенте
   useEffect(() => {
-    if (router.isReady && typeof id === 'string') {
-      const found = agents.find(agent => agent.id === id);
-      setAssistantName(found?.name || 'Ассистент');
+    if (router.isReady && typeof slug === 'string') {
+      fetch(`/api/agents?slug=${slug}`)
+        .then(res => res.json())
+        .then(data => {
+          const agent = (data.agents && data.agents[0]) || data.agent;
+          if (agent) {
+            setAssistantName(agent.name);
+            setAssistantId(agent.id);
+          }
+        });
     }
-  }, [router.isReady, id]);
+  }, [router.isReady, slug]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -169,14 +172,14 @@ export default function AgentChat() {
   };
 
   async function sendMessage() {
-    if (!input.trim() || typeof id !== 'string') return;
+    if (!input.trim() || !assistantId) return;
 
     setLoading(true);
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, assistant_id: id }),
+        body: JSON.stringify({ message: input, assistant_id: assistantId }),
       });
 
       if (!res.ok) {
@@ -229,7 +232,9 @@ export default function AgentChat() {
             className="clear-chat-button"
             onClick={() => {
               setMessages([]);
-              localStorage.removeItem(`chat_${id}`);
+              if (typeof slug === 'string') {
+                localStorage.removeItem(`chat_${slug}`);
+              }
             }}
           >
             Очистить чат

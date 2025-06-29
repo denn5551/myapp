@@ -14,10 +14,33 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log('Тело запроса:', req.body);
 
   if (req.method === 'GET') {
-    // Получить всех агентов
+    const { categoryId, slug, limit, offset = 0 } = req.query as any;
+
     try {
-      const agents = db.prepare('SELECT * FROM agents ORDER BY created_at DESC').all();
-      console.log('Получено агентов:', agents.length);
+      let query = 'SELECT * FROM agents';
+      const params: any[] = [];
+
+      const conditions: string[] = [];
+      if (categoryId) {
+        conditions.push('category_id = ?');
+        params.push(Number(categoryId));
+      }
+      if (slug) {
+        conditions.push('slug = ?');
+        params.push(slug);
+      }
+      if (conditions.length) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      if (limit) {
+        query += ' LIMIT ? OFFSET ?';
+        params.push(Number(limit), Number(offset));
+      }
+
+      const agents = db.prepare(query).all(...params);
       return res.status(200).json({ agents });
     } catch (error: any) {
       console.error('Ошибка получения агентов:', error);

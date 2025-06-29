@@ -2,7 +2,7 @@
  
 import Link from 'next/link';
 import { useCategoryStore } from '@/store/categoryStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -17,8 +17,16 @@ export default function Sidebar({
   userEmail,
   subscriptionStatus,
 }: SidebarProps) {
-  const { categories } = useCategoryStore();
+  const { categories, setCategories } = useCategoryStore();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/categories?limit=5')
+      .then(res => res.json())
+      .then(data => {
+        if (data.categories) setCategories(data.categories);
+      });
+  }, [setCategories]);
 
 	const toggleUserMenu = () => {
 	  setUserMenuOpen(prev => !prev);
@@ -40,7 +48,7 @@ export default function Sidebar({
 			<h4><a className="color" href="/dashboard">Главная</a></h4>
             <h4>Категории</h4>
             <ul className="sidebar-menu">			
-              {categories.map(cat => (
+              {categories.slice(0, 5).map(cat => (
 				  <li key={cat.id} className="sidebar-menu-item">
 					<Link href={`/categories/${cat.name}`} className="sidebar-link">
 					  {cat.name}
