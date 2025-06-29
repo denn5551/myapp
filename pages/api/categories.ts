@@ -1,8 +1,13 @@
 //pages/api/categories.ts
 
 import Database from 'better-sqlite3';
+import { parse } from 'cookie';
 
 export default function handler(req, res) {
+  const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
+  if (cookies.userEmail !== 'kcc-kem@ya.ru') {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const db = new Database('./data/users.db');
 
   // Получить все категории

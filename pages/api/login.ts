@@ -16,10 +16,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return res.status(401).json({ message: 'Неверный пароль', success: false });
 
-  res.setHeader('Set-Cookie', serialize('user', String(user.id), {
-    path: '/',
-    maxAge: 60 * 60 * 24 * 3, // 3 дня
-  }));
+  res.setHeader('Set-Cookie', [
+    serialize('user', String(user.id), {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 3, // 3 дня
+    }),
+    serialize('userEmail', user.email, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 3,
+    }),
+  ]);
 
   res.json({ message: 'Успешный вход', success: true });
 }

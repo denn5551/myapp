@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
+import { withAdminAccess } from '@/lib/withAdminAccess';
 
 interface User {
   id: number;
@@ -96,3 +97,5 @@ export default function AdminUsersPage() {
     </AdminLayout>
   );
 }
+
+export const getServerSideProps = withAdminAccess();

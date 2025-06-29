@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
+import { withAdminAccess } from '@/lib/withAdminAccess';
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -132,4 +133,6 @@ export default function AdminCategoriesPage() {
     </AdminLayout>
   );
 }
+
+export const getServerSideProps = withAdminAccess();
 

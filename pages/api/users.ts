@@ -2,8 +2,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import { parse } from 'cookie';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
+  if (cookies.userEmail !== 'kcc-kem@ya.ru') {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   if (req.method !== 'GET') return res.status(405).end();
 
   const db = await open({ filename: './data/users.db', driver: sqlite3.Database });
