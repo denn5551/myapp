@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
+import { withAdminAccess } from '@/lib/withAdminAccess';
 
 // Копируем функцию slugify прямо сюда
 function slugify(text: string) {
@@ -348,3 +349,5 @@ const fetchData = async () => {
     </AdminLayout>
   );
 }
+
+export const getServerSideProps = withAdminAccess();

@@ -1,10 +1,15 @@
 // pages/api/agents.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Database from 'better-sqlite3';
+import { parse } from 'cookie';
 
 const db = new Database('./data/users.db');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
+  if (cookies.userEmail !== 'kcc-kem@ya.ru') {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   console.log(`API вызван с методом: ${req.method}`);
   console.log('Тело запроса:', req.body);
 
