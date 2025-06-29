@@ -5,11 +5,12 @@ import Database from 'better-sqlite3';
 // Открываем соединение с базой (путь к твоей базе данных)
 const db = new Database('./data/users.db');
 
-// Функция для поиска агента по openaiId
-function getAgentByOpenaiId(openaiId: string) {
-  const stmt = db.prepare('SELECT * FROM agents WHERE openaiId = ?');
-  return stmt.get(openaiId);
-}
+// Возвращает агента по Assistant ID из таблицы `agents`
+// В базе идентификатор ассистента хранится в столбце `id`
+const findAgentByAssistantId = (assistantId: string) => {
+  const stmt = db.prepare('SELECT * FROM agents WHERE id = ?');
+  return stmt.get(assistantId);
+};
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -31,7 +32,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   // === Проверяем ассистента в базе ===
-  const agent = getAgentByOpenaiId(assistant_id);
+  const agent = findAgentByAssistantId(assistant_id);
 
   if (!agent) {
     return res.status(404).json({ error: 'Агент с таким assistant_id не найден в базе' });
