@@ -1,5 +1,5 @@
 // pages/agents/index.tsx
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useAgentStore } from '@/store/agentStore';
@@ -9,7 +9,7 @@ export default function AgentsPage() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const { categories } = useCategoryStore();
   const { agents } = useAgentStore();
@@ -23,22 +23,25 @@ export default function AgentsPage() {
         } else {
           setEmail(data.email);
           setSubscriptionStatus(data.subscriptionStatus || 'expired');
+          setLoading(false);
         }
       });
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-  const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
+
+  if (loading) {
+    return <div>Загрузка...</div>;
+  }
 
   return (
     <div className="dashboard-layout">
-	/* Sidebar */
-         <Sidebar
-  sidebarOpen={sidebarOpen}
-  toggleSidebar={toggleSidebar}
-  userEmail={email}
-  subscriptionStatus={subscriptionStatus}  
-/>
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
+        userEmail={email}
+        subscriptionStatus={subscriptionStatus}
+      />
 
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
         <div className="content-header">
@@ -54,7 +57,6 @@ export default function AgentsPage() {
 
         {categories.map(category => {
           const categoryAgents = agents.filter(agent => agent.categoryId === category.id);
-          if (categoryAgents.length === 0) return null;
 
           return (
             <section key={category.id} className="content-section">
@@ -66,22 +68,28 @@ export default function AgentsPage() {
                 </h2>
               </div>
 
-              <div className="agents-grid">
-                {categoryAgents.slice(0, 4).map(agent => (
-                  <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
-                    <div className="agent-card">
-                      <h3 className="agent-title">{agent.name}</h3>
-                      <p className="agent-description">{agent.short || agent.description}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              {categoryAgents.length === 0 ? (
+                <p>Нет агентов в этой категории.</p>
+              ) : (
+                <>
+                  <div className="agents-grid">
+                    {categoryAgents.map(agent => (
+                      <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+                        <div className="agent-card">
+                          <h3 className="agent-title">{agent.name}</h3>
+                          <p className="agent-description">{agent.short}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
 
-              <div className="see-all-button-container mt-4">
-                <Link href={`/categories/${category.name}`} className="see-all-button">
-                  Смотреть всех →
-                </Link>
-              </div>
+                  <div className="see-all-button-container">
+                    <Link href={`/categories/${category.name}`} className="see-all-button">
+                      Смотреть всех →
+                    </Link>
+                  </div>
+                </>
+              )}
             </section>
           );
         })}
