@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+База данных
+Используемая СУБД:
+SQLite (через пакет better-sqlite3)
+
+Путь до базы на сервере
+Путь:
+./data/users.db
+(обычно — если запуск из корня проекта: /home/your_user/myapp/data/users.db или аналогично)
+
+Структура таблиц
+Таблица: agent_categories (категории агентов)
+sql
+Копировать
+Редактировать
+CREATE TABLE agent_categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE,
+  description TEXT
+);
+id — числовой идентификатор категории (уникальный, автоинкремент)
+
+name — название категории (уникальное)
+
+description — описание категории
+
+Таблица: agents (ИИ-агенты)
+sql
+Копировать
+Редактировать
+CREATE TABLE agents (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  description TEXT,
+  full_description TEXT,
+  category_id INTEGER,
+  slug TEXT,
+  is_active INTEGER,
+  created_at TEXT,
+  updated_at TEXT
+);
+id — строковый идентификатор агента (например, asst_test123 или OpenAI ID)
+
+name — название агента
+
+description — краткое описание
+
+full_description — полное описание
+
+category_id — внешний ключ (ссылка на категорию)
+
+slug — человекочитаемый URL-путь
+
+is_active — флаг активности (1 — активен, 0 — выключен)
+
+created_at — дата/время создания
+
+
+updated_at — дата/время последнего изменения

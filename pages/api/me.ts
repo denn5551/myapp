@@ -1,17 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-// Входные данные — можно удалить, если не используешь
-const fakeUser = {
-  email: 'user@example.com',
-  registeredAt: '2025-06-17T10:00:00Z', // дата регистрации ISO
-};
-
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = req.headers.cookie || '';
+  const emailCookie = cookies.split(';').find(c => c.trim().startsWith('email='));
+  const email = emailCookie ? decodeURIComponent(emailCookie.split('=')[1]) : null;
   const hasPaid = cookies.includes('subscriptionPaid=true');
 
+  if (!email) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
   const now = new Date();
-  const registered = new Date(fakeUser.registeredAt);
+  const registered = new Date(); // Используем текущую дату как дату регистрации
   const diffInDays = Math.floor((now.getTime() - registered.getTime()) / (1000 * 60 * 60 * 24));
 
   let status: 'trial' | 'active' | 'expired' = 'expired';
@@ -23,9 +23,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   res.status(200).json({
-    email: fakeUser.email,
-    registeredAt: fakeUser.registeredAt,
+    email,
+    registeredAt: registered.toISOString(),
     subscriptionStatus: status,
     trialEndsIn: 3 - diffInDays,
+    isAdmin: email === 'kcc-kem@ya.ru'
   });
 }
