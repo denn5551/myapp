@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, ReactElement } from 'react';
 import Link from 'next/link';
 import React from 'react';
 import agents from '../../data/agents.json';
@@ -9,7 +9,7 @@ import Sidebar from '@/components/Sidebar';
 const categories = ['Здоровье', 'Финансы', 'Быт', 'Дети'];
 
 // Функция для форматирования текста с абзацами
-const formatMessageText = (text: string) => {
+const formatMessageText = (text: string): ReactElement[] => {
   // Разбиваем текст на абзацы по двойным переносам строки
   const paragraphs = text.split(/\n\s*\n/);
   
@@ -22,7 +22,7 @@ const formatMessageText = (text: string) => {
     // Обрабатываем списки (строки, начинающиеся с -, *, цифры)
     if (trimmedParagraph.includes('\n-') || trimmedParagraph.includes('\n*') || /\n\d+\./.test(trimmedParagraph)) {
       const lines = trimmedParagraph.split('\n');
-      const elements: JSX.Element[] = [];
+      const elements: ReactElement[] = [];
       let currentList: string[] = [];
       let currentListType: 'ul' | 'ol' | null = null;
       
