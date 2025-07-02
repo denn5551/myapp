@@ -1,6 +1,7 @@
  //components/Sidebar.tsx
  
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useState } from 'react';
 
@@ -17,12 +18,24 @@ export default function Sidebar({
   userEmail,
   subscriptionStatus,
 }: SidebarProps) {
+  const router = useRouter();
   const { categories } = useCategoryStore();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
 	const toggleUserMenu = () => {
 	  setUserMenuOpen(prev => !prev);
 	};
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout');
+      if (response.ok) {
+        router.push('/auth/login');
+      }
+    } catch (error) {
+      console.error('Ошибка при выходе:', error);
+    }
+  };
 
   return (
     <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
@@ -117,9 +130,9 @@ export default function Sidebar({
                   Помощь
                 </Link>
                 <hr className="user-menu-separator" />
-                <Link href="/logout" className="user-menu-item">
+                <button onClick={handleLogout} className="user-menu-item">
                   Выйти
-                </Link>
+                </button>
               </div>
             )}
           </div>
