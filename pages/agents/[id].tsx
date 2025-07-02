@@ -17,7 +17,7 @@ const formatMessageText = (text: string): ReactElement[] => {
     // Убираем лишние пробелы и переносы в начале и конце
     const trimmedParagraph = paragraph.trim();
     
-    if (!trimmedParagraph) return null;
+    if (!trimmedParagraph) return <React.Fragment key={index}></React.Fragment>;
     
     // Обрабатываем списки (строки, начинающиеся с -, *, цифры)
     if (trimmedParagraph.includes('\n-') || trimmedParagraph.includes('\n*') || /\n\d+\./.test(trimmedParagraph)) {
@@ -84,11 +84,11 @@ const formatMessageText = (text: string): ReactElement[] => {
       }
       
       return <div key={index}>{elements}</div>;
-    } else {
-      // Обычный абзац
-      return <p key={index}>{trimmedParagraph}</p>;
     }
-  }).filter(Boolean);
+    
+    // Обычный абзац
+    return <p key={index}>{trimmedParagraph}</p>;
+  });
 };
 
 export default function AgentChat() {
