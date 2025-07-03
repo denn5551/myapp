@@ -28,9 +28,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
       <AdminSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-      <main className={`flex-1 p-8 transition-all ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} p-8`}>
         {children}
       </main>
     </div>

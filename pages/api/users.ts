@@ -11,24 +11,21 @@ async function openDb() {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const db = await openDb();
+  try {
+    const db = await openDb();
 
-  if (req.method === 'GET') {
-    try {
+    if (req.method === 'GET') {
       const users = await db.all('SELECT id, email, created_at FROM users');
+      console.log('Fetched users:', users); // Для отладки
       res.status(200).json(users);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch users' });
-    }
-  } 
-  else if (req.method === 'POST') {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
+    } 
+    else if (req.method === 'POST') {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
 
-    try {
       const result = await db.run(
         'INSERT INTO users (email, password, created_at) VALUES (?, ?, datetime("now"))',
         [email, password]
@@ -40,25 +37,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
       
       res.status(201).json(newUser);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to create user' });
     }
-  }
-  else if (req.method === 'DELETE') {
-    const { id } = req.query;
-    
-    if (!id) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
+    else if (req.method === 'DELETE') {
+      const { id } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
 
-    try {
       await db.run('DELETE FROM users WHERE id = ?', id);
       res.status(200).json({ message: 'User deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to delete user' });
     }
-  }
-  else {
-    res.status(405).json({ error: 'Method not allowed' });
+    else {
+      res.status(405).json({ error: 'Method not allowed' });
+    }
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 } 
