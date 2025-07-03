@@ -36,12 +36,12 @@ export default function AgentsPage() {
 
   return (
     <div className="dashboard-layout">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        userEmail={email}
-        subscriptionStatus={subscriptionStatus}
-      />
+         <Sidebar
+  sidebarOpen={sidebarOpen}
+  toggleSidebar={toggleSidebar}
+  userEmail={email}
+  subscriptionStatus={subscriptionStatus}  
+/>
 
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
         <div className="content-header">
@@ -72,22 +72,22 @@ export default function AgentsPage() {
                 <p>Нет агентов в этой категории.</p>
               ) : (
                 <>
-                  <div className="agents-grid">
+              <div className="agents-grid">
                     {categoryAgents.map(agent => (
-                      <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
-                        <div className="agent-card">
-                          <h3 className="agent-title">{agent.name}</h3>
+                  <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+                    <div className="agent-card">
+                      <h3 className="agent-title">{agent.name}</h3>
                           <p className="agent-description">{agent.short}</p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
 
                   <div className="see-all-button-container">
-                    <Link href={`/categories/${category.name}`} className="see-all-button">
-                      Смотреть всех →
-                    </Link>
-                  </div>
+                <Link href={`/categories/${category.name}`} className="see-all-button">
+                  Смотреть всех →
+                </Link>
+              </div>
                 </>
               )}
             </section>

@@ -13,21 +13,21 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
       
-      const result = await res.json();
+    const result = await res.json();
       
-      if (result.success) {
+    if (result.success) {
         if (result.isAdmin) {
           router.push('/admin/agents');
         } else {
           router.push('/dashboard');
         }
-      } else {
+    } else {
         setError(result.message);
       }
     } catch (err) {
@@ -88,7 +88,7 @@ export default function Login() {
             <button type="submit" className="btn btn-primary w-full">
               Войти
             </button>
-          </form>
+    </form>
 
           <p className="mt-4 text-center text-sm text-gray-600">
             Нет аккаунта?{' '}

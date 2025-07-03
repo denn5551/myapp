@@ -58,27 +58,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-gray-400 hover:text-white"
             >
-              {sidebarOpen ? '←' : '→'}
-            </button>
-          </div>
+            {sidebarOpen ? '←' : '→'}
+          </button>
+        </div>
 
           <nav className="flex-1 p-4">
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
+            <Link
+              key={item.href}
+              href={item.href}
+              className={clsx(
                   'flex items-center px-4 py-3 mb-2 rounded-lg transition-colors',
                   router.pathname === item.href
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                )}
+              )}
               >
                 <span className="mr-3">{item.icon}</span>
                 {sidebarOpen && <span>{item.label}</span>}
-              </Link>
-            ))}
-          </nav>
+            </Link>
+          ))}
+        </nav>
 
           <div className="p-4 border-t border-gray-700">
             <div className="flex items-center">
@@ -98,7 +98,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
-          {children}
+        {children}
         </div>
       </main>
     </div>
