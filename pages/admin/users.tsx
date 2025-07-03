@@ -2,8 +2,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import Link from 'next/link';
-import clsx from 'clsx';
 
 interface User {
   id: number;
@@ -65,57 +63,62 @@ export default function AdminUsersPage() {
       <Head>
         <title>Админка — Пользователи</title>
       </Head>
-      <h1 className="text-2xl font-bold mb-4">Пользователи</h1>
-      <table className="w-full table-auto border-collapse">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">Email</th>
-            <th className="border p-2">Дата регистрации</th>
-            <th className="border p-2">Статус</th>
-            <th className="border p-2">Начало подписки</th>
-            <th className="border p-2">Окончание подписки</th>
-            <th className="border p-2">Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr key={user.id} className="text-sm text-center">
-              <td className="border p-2">{user.email}</td>
-              <td className="border p-2">{user.registeredAt}</td>
-              <td className="border p-2">
-                <select
-                  className="border rounded px-2 py-1 text-sm"
-                  value={user.subscriptionStatus}
-                  onChange={e =>
-                    handleStatusChange(user.id, e.target.value as User['subscriptionStatus'])
-                  }
-                >
-                  <option value="trial">trial</option>
-                  <option value="active">active</option>
-                  <option value="expired">expired</option>
-                </select>
-              </td>
-              <td className="border p-2">{user.subscriptionStart}</td>
-              <td className="border p-2">
-                <input
-                  type="date"
-                  className="border rounded px-2 py-1 text-sm"
-                  value={user.subscriptionEnd}
-                  onChange={e => handleEndDateChange(user.id, e.target.value)}
-                />
-              </td>
-              <td className="border p-2">
-                <button
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                  onClick={() => handleDelete(user.id)}
-                >
-                  Удалить
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-6">Пользователи</h1>
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border p-2 text-left">Email</th>
+                <th className="border p-2 text-left">Дата регистрации</th>
+                <th className="border p-2 text-left">Статус</th>
+                <th className="border p-2 text-left">Начало подписки</th>
+                <th className="border p-2 text-left">Окончание подписки</th>
+                <th className="border p-2 text-center">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user.id} className="text-sm">
+                  <td className="border p-2">{user.email}</td>
+                  <td className="border p-2">{user.registeredAt}</td>
+                  <td className="border p-2">
+                    <select
+                      className="border rounded px-2 py-1 w-full"
+                      value={user.subscriptionStatus}
+                      onChange={e =>
+                        handleStatusChange(user.id, e.target.value as User['subscriptionStatus'])
+                      }
+                    >
+                      <option value="trial">trial</option>
+                      <option value="active">active</option>
+                      <option value="expired">expired</option>
+                    </select>
+                  </td>
+                  <td className="border p-2">{user.subscriptionStart}</td>
+                  <td className="border p-2">
+                    <input
+                      type="date"
+                      className="border rounded px-2 py-1 w-full"
+                      value={user.subscriptionEnd}
+                      onChange={e => handleEndDateChange(user.id, e.target.value)}
+                    />
+                  </td>
+                  <td className="border p-2 text-center">
+                    <button
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                      onClick={() => handleDelete(user.id)}
+                    >
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </AdminLayout>
   );
 }
