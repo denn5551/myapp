@@ -5,7 +5,7 @@ import { open } from 'sqlite';
 // Открываем соединение с базой данных
 async function openDb() {
   return open({
-    filename: './data/database.sqlite',
+    filename: './data/users.db',
     driver: sqlite3.Database
   });
 }
@@ -15,24 +15,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const db = await openDb();
 
     if (req.method === 'GET') {
-      const users = await db.all('SELECT id, email, created_at FROM users');
-      console.log('Fetched users:', users); // Для отладки
+      const users = await db.all('SELECT id, email, name, created_at FROM users');
       res.status(200).json(users);
     } 
     else if (req.method === 'POST') {
-      const { email, password } = req.body;
+      const { email, password, name } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
       const result = await db.run(
-        'INSERT INTO users (email, password, created_at) VALUES (?, ?, datetime("now"))',
-        [email, password]
+        'INSERT INTO users (email, password_hash, name, created_at) VALUES (?, ?, ?, datetime("now"))',
+        [email, password, name || null]
       );
       
       const newUser = await db.get(
-        'SELECT id, email, created_at FROM users WHERE id = ?',
+        'SELECT id, email, name, created_at FROM users WHERE id = ?',
         result.lastID
       );
       
