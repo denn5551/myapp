@@ -1,10 +1,11 @@
 // components/AdminLayout.tsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import AdminSidebar from './AdminSidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     // Проверяем email в куке для доступа к админке
@@ -22,10 +23,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <AdminSidebar />
-      <main className="flex-1 p-8">
+      <AdminSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+      <main className={`flex-1 p-8 transition-all ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         {children}
       </main>
     </div>

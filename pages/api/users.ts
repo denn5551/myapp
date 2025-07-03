@@ -21,23 +21,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(500).json({ error: 'Failed to fetch users' });
     }
   } 
-  else if (req.method === 'PUT') {
-    const { id, ...updates } = req.body;
+  else if (req.method === 'POST') {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
     try {
-      await db.run(`
-        UPDATE users 
-        SET 
-          subscription_status = ?,
-          subscription_end = ?
-        WHERE id = ?
-      `, [updates.subscriptionStatus, updates.subscriptionEnd, id]);
-      res.status(200).json({ message: 'User updated successfully' });
+      const result = await db.run(
+        'INSERT INTO users (email, password, created_at) VALUES (?, ?, datetime("now"))',
+        [email, password]
+      );
+      
+      const newUser = await db.get(
+        'SELECT id, email, created_at FROM users WHERE id = ?',
+        result.lastID
+      );
+      
+      res.status(201).json(newUser);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to update user' });
+      res.status(500).json({ error: 'Failed to create user' });
     }
   }
   else if (req.method === 'DELETE') {
     const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
     try {
       await db.run('DELETE FROM users WHERE id = ?', id);
       res.status(200).json({ message: 'User deleted successfully' });
