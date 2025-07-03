@@ -23,9 +23,9 @@ export default function Login() {
       
     if (result.success) {
         if (result.isAdmin) {
-          router.push('/admin/agents');
+          window.location.href = '/admin/agents';
         } else {
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         }
     } else {
         setError(result.message);

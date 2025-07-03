@@ -20,10 +20,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cookieOptions = {
     path: '/',
     httpOnly: false, // чтобы клиент мог читать email
-    secure: process.env.NODE_ENV === 'production',
+    secure: false, // отключаем для http
     sameSite: 'lax' as const,
-    maxAge: 60 * 60 * 24 * 3, // 3 дня
-    domain: req.headers.host?.split(':')[0] // явно укажем домен
+    maxAge: 60 * 60 * 24 * 3 // 3 дня
   };
 
   // Для отладки
