@@ -8,10 +8,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     // Проверяем email в куке для доступа к админке
-    const email = document.cookie
+    const encodedEmail = document.cookie
       .split('; ')
       .find(row => row.startsWith('email='))
       ?.split('=')[1];
+
+    // Декодируем email из куки
+    const email = encodedEmail ? decodeURIComponent(encodedEmail) : null;
+    console.log('Decoded email:', email); // Для отладки
 
     if (email !== 'kcc-kem@ya.ru') {
       router.push('/auth/login');
