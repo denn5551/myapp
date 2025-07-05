@@ -15,7 +15,7 @@ export default function AdminCategoriesPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <Head>
         <title>Админка — Категории</title>
       </Head>
@@ -70,6 +70,6 @@ export default function AdminCategoriesPage() {
           ))}
         </tbody>
       </table>
-    </AdminLayout>
+    </>
   );
 }
