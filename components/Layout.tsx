@@ -6,7 +6,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('expired');
 
   useEffect(() => {
-    fetch('/api/me')
+    fetch('/api/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => setSubscriptionStatus(data.subscriptionStatus));
   }, []);

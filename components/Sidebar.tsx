@@ -28,7 +28,9 @@ export default function Sidebar({
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/logout');
+      const response = await fetch('/api/logout', {
+        credentials: 'include'
+      });
       if (response.ok) {
         router.push('/auth/login');
       }

@@ -15,7 +15,7 @@ export default function AgentsPage() {
   const { agents } = useAgentStore();
 
   useEffect(() => {
-    fetch('/api/me')
+    fetch('/api/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (!data.email) {

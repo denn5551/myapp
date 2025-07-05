@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { serialize } from 'cookie';
+import crypto from 'crypto';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -25,9 +26,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     maxAge: 60 * 60 * 24 * 3 // 3 дня
   };
 
+  const token = crypto.randomBytes(16).toString('hex');
+
   res.setHeader('Set-Cookie', [
     serialize('email', email, cookieOptions),
-    serialize('user_id', String(user.id), cookieOptions)
+    serialize('user_id', String(user.id), cookieOptions),
+    serialize('token', token, cookieOptions)
   ]);
 
   await db.close();
