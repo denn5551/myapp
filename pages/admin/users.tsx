@@ -61,7 +61,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <Head>
         <title>Админка — Пользователи</title>
       </Head>
@@ -116,6 +116,6 @@ export default function AdminUsersPage() {
           ))}
         </tbody>
       </table>
-    </AdminLayout>
+    </>
   );
 }

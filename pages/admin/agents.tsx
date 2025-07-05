@@ -30,7 +30,7 @@ export default function AdminAgentsPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <Head>
         <title>Админка — Агенты</title>
       </Head>
@@ -146,6 +146,6 @@ export default function AdminAgentsPage() {
           ))}
         </tbody>
       </table>
-    </AdminLayout>
+    </>
   );
 }
