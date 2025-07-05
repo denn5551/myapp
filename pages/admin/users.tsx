@@ -1,7 +1,6 @@
 // pages/admin/users.tsx
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import AdminLayout from '@/components/AdminLayout';
 
 interface User {
   id: number;
@@ -78,7 +77,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <Head>
         <title>Админка — Пользователи</title>
       </Head>
@@ -153,6 +152,6 @@ export default function AdminUsersPage() {
           )}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }

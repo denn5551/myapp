@@ -1,7 +1,6 @@
 // pages/admin/categories.tsx
 import { useState } from 'react';
 import Head from 'next/head';
-import AdminLayout from '@/components/AdminLayout';
 import { useCategoryStore } from '@/store/categoryStore';
 
 export default function AdminCategoriesPage() {
@@ -15,7 +14,7 @@ export default function AdminCategoriesPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <Head>
         <title>Админка — Категории</title>
       </Head>
@@ -70,6 +69,6 @@ export default function AdminCategoriesPage() {
           ))}
         </tbody>
       </table>
-    </AdminLayout>
+    </>
   );
 }
