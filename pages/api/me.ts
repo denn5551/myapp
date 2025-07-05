@@ -1,6 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.headers.origin) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   const { email, subscriptionPaid } = req.cookies as {
     email?: string;
     subscriptionPaid?: string;

@@ -19,6 +19,11 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
         credentials: 'include'
       });
+      console.log('Request headers:', {
+        'Content-Type': 'application/json',
+        credentials: 'include'
+      });
+      console.log('Response headers:', Array.from(res.headers.entries()));
       
       const result = await res.json();
       

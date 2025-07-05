@@ -6,6 +6,11 @@ import { serialize } from 'cookie';
 import crypto from 'crypto';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.headers.origin) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
   const { email, password } = req.body;
@@ -22,7 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     path: '/',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
+    domain: req.headers.host?.split(':')[0],
     maxAge: 60 * 60 * 24 * 3 // 3 дня
   };
 
@@ -33,6 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     serialize('user_id', String(user.id), cookieOptions),
     serialize('token', token, cookieOptions)
   ]);
+
+  console.log('Login response headers:', res.getHeaders());
 
   await db.close();
 
