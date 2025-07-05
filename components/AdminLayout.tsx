@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetch('/api/me')
+    fetch('/api/me', { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => {
         if (!data.isAdmin) {

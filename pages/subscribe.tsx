@@ -6,7 +6,7 @@ export default function SubscribePage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('trial');
 
   useEffect(() => {
-    fetch('/api/me')
+    fetch('/api/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         setSubscriptionStatus(data.subscriptionStatus || 'expired');

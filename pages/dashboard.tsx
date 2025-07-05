@@ -38,7 +38,7 @@ export default function Dashboard() {
   const { categories } = useCategoryStore();
 
   useEffect(() => {
-    fetch('/api/me')
+    fetch('/api/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (!data.email) {
