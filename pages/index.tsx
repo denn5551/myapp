@@ -6,7 +6,7 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    fetch('/api/me')
+    fetch('/api/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data?.email) {
