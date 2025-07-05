@@ -7,13 +7,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { email, subscriptionPaid } = req.cookies as {
-    email?: string;
-    subscriptionPaid?: string;
-  };
-
-  const decodedEmail = email ? decodeURIComponent(email) : null;
-
+  const cookies = req.headers.cookie || '';
+  const emailCookie = cookies.split(';').find(c => c.trim().startsWith('email='));
+  const decodedEmail = emailCookie ? decodeURIComponent(emailCookie.split('=')[1]) : null;
+  const hasPaid = cookies.includes('subscriptionPaid=true');
   if (!decodedEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
@@ -22,7 +19,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const registered = new Date(); // Используем текущую дату как дату регистрации
   const diffInDays = Math.floor((now.getTime() - registered.getTime()) / (1000 * 60 * 60 * 24));
 
-  const hasPaid = subscriptionPaid === 'true';
 
   let status: 'trial' | 'active' | 'expired' = 'expired';
 
