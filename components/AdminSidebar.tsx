@@ -16,9 +16,9 @@ export default function AdminSidebar({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const menuItems = [
-    { href: '/admin/agents', label: '👥 ИИ-Агенты' },
-    { href: '/admin/categories', label: '📁 Категории' },
-    { href: '/admin/users', label: '👤 Пользователи' }
+    { href: '/admin/agents', label: 'ИИ-Агенты 📁' },
+    { href: '/admin/categories', label: 'Категории 👤' },
+    { href: '/admin/users', label: 'Пользователи' }
   ];
 
   const toggleUserMenu = () => {
@@ -27,7 +27,7 @@ export default function AdminSidebar({
 
   return (
     <aside className={`fixed top-0 left-0 h-full bg-gray-900 text-white transition-all duration-300 z-50 ${
-      sidebarOpen ? 'w-64' : 'w-16'
+      sidebarOpen ? 'w-52' : 'w-16'
     }`}>
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-4 border-b border-gray-800">

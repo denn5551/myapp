@@ -1,7 +1,6 @@
 // pages/admin/agents.tsx
 import { useState } from 'react';
 import Head from 'next/head';
-import AdminLayout from '@/components/AdminLayout';
 import { useAgentStore } from '@/store/agentStore';
 import { useCategoryStore } from '@/store/categoryStore';
 
@@ -30,7 +29,7 @@ export default function AdminAgentsPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <Head>
         <title>Админка — Агенты</title>
       </Head>
@@ -146,6 +145,6 @@ export default function AdminAgentsPage() {
           ))}
         </tbody>
       </table>
-    </AdminLayout>
+    </>
   );
 }

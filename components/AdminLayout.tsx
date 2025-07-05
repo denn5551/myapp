@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminSidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-      <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} p-8`}>
+      <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-52' : 'ml-16'} p-8`}>
         {children}
       </main>
     </div>
