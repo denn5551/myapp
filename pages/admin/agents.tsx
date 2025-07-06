@@ -1,32 +1,79 @@
 // pages/admin/agents.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import { useAgentStore } from '@/store/agentStore';
-import { useCategoryStore } from '@/store/categoryStore';
 
 export default function AdminAgentsPage() {
-  const { agents, addAgent, updateAgent, deleteAgent } = useAgentStore();
-  const { categories } = useCategoryStore();
+  const [agents, setAgents] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
   const [newAgent, setNewAgent] = useState({
-    openaiId: '', // Изменено с id на openaiId
+    openaiId: '',
     name: '',
     short: '',
     full: '',
-    categoryId: categories[0]?.id || 1, // Используем существующую категорию
+    categoryId: 1,
   });
 
-  const handleAdd = () => {
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        setCategories(data);
+        if (data.length > 0) {
+          setNewAgent(a => ({ ...a, categoryId: data[0].id }));
+        }
+      })
+      .catch(console.error);
+    fetch('/api/agents')
+      .then(res => res.json())
+      .then(data => setAgents(data.map((a: any) => ({
+        ...a,
+        categoryId: a.category_id,
+        openaiId: a.id,
+        short: a.short_description,
+        full: a.description
+      }))))
+      .catch(console.error);
+  }, []);
+
+  const handleAdd = async () => {
     if (!newAgent.openaiId || !newAgent.name) return;
-    addAgent(newAgent);
-    setNewAgent({ 
-      openaiId: '', 
-      name: '', 
-      short: '', 
-      full: '', 
-      categoryId: categories[0]?.id || 1 
+    const res = await fetch('/api/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        openaiId: newAgent.openaiId,
+        name: newAgent.name,
+        short: newAgent.short,
+        full: newAgent.full,
+        categoryId: newAgent.categoryId,
+      }),
     });
+    if (res.ok) {
+      const created = await res.json();
+      setAgents(prev => [...prev, { ...created, categoryId: created.category_id, openaiId: created.id, short: created.short_description, full: created.description }]);
+      setNewAgent({ openaiId: '', name: '', short: '', full: '', categoryId: categories[0]?.id || 1 });
+    }
+  };
+
+  const handleUpdate = async (id: string, updates: any) => {
+    const res = await fetch('/api/agents', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setAgents(prev => prev.map(a => (a.id === id ? { ...a, ...updates } : a)));
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const res = await fetch(`/api/agents?id=${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setAgents(prev => prev.filter(a => a.id !== id));
+    }
   };
 
   return (
@@ -98,14 +145,14 @@ export default function AdminAgentsPage() {
                 <input
                   className="w-full border px-2 py-1 rounded"
                   value={agent.name}
-                  onChange={(e) => updateAgent(agent.id, { name: e.target.value })}
+                  onChange={(e) => handleUpdate(agent.id, { name: e.target.value })}
                 />
               </td>
               <td className="border p-2">
                 <select
                   className="w-full border px-2 py-1 rounded"
                   value={agent.categoryId}
-                  onChange={(e) => updateAgent(agent.id, { categoryId: +e.target.value })}
+                  onChange={(e) => handleUpdate(agent.id, { categoryId: +e.target.value })}
                 >
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -115,15 +162,15 @@ export default function AdminAgentsPage() {
               <td className="border p-2">
                 <input
                   className="w-full border px-2 py-1 rounded"
-                  value={agent.openaiId} // Изменено с agent.id на agent.openaiId
-                  onChange={(e) => updateAgent(agent.id, { openaiId: e.target.value })}
+                  value={agent.openaiId}
+                  onChange={(e) => handleUpdate(agent.id, { openaiId: e.target.value })}
                 />
               </td>
               <td className="border p-2">
                 <input
                   className="w-full border px-2 py-1 rounded"
                   value={agent.short}
-                  onChange={(e) => updateAgent(agent.id, { short: e.target.value })}
+                  onChange={(e) => handleUpdate(agent.id, { short: e.target.value })}
                 />
               </td>
               <td className="border p-2">
@@ -131,13 +178,13 @@ export default function AdminAgentsPage() {
                   className="w-full border px-2 py-1 rounded"
                   rows={2}
                   value={agent.full}
-                  onChange={(e) => updateAgent(agent.id, { full: e.target.value })}
+                  onChange={(e) => handleUpdate(agent.id, { full: e.target.value })}
                 />
               </td>
               <td className="border p-2 text-center">
                 <button
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                  onClick={() => deleteAgent(agent.id)}
+                  onClick={() => handleDelete(agent.id)}
                 >
                   Удалить
                 </button>

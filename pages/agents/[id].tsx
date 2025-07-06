@@ -3,10 +3,7 @@ import { useEffect, useState, useRef, ReactElement } from 'react';
 import Link from 'next/link';
 import React from 'react';
 import agents from '../../data/agents.json';
-import { useCategoryStore } from '@/store/categoryStore';
 import Sidebar from '@/components/Sidebar';
-
-const categories = ['Здоровье', 'Финансы', 'Быт', 'Дети'];
 
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string): ReactElement[] => {
@@ -105,7 +102,6 @@ export default function AgentChat() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { categories } = useCategoryStore();
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {

@@ -2,8 +2,7 @@
  
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCategoryStore } from '@/store/categoryStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -19,8 +18,15 @@ export default function Sidebar({
   subscriptionStatus,
 }: SidebarProps) {
   const router = useRouter();
-  const { categories } = useCategoryStore();
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(setCategories)
+      .catch(err => console.error('Category fetch error:', err));
+  }, []);
 
 	const toggleUserMenu = () => {
 	  setUserMenuOpen(prev => !prev);
