@@ -1,17 +1,28 @@
 // pages/admin/categories.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import { useCategoryStore } from '@/store/categoryStore';
 
 export default function AdminCategoriesPage() {
-  const { categories, addCategory, renameCategory, deleteCategory } = useCategoryStore();
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [newName, setNewName] = useState('');
 
-  const handleAdd = () => {
+  useEffect(() => {
+    fetch('/api/categories').then(res => res.json()).then(setCategories).catch(console.error);
+  }, []);
+
+  const handleAdd = async () => {
     if (!newName.trim()) return;
-    addCategory(newName.trim());
-    setNewName('');
+    const res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim() }),
+    });
+    if (res.ok) {
+      const cat = await res.json();
+      setCategories(prev => [...prev, cat]);
+      setNewName('');
+    }
   };
 
   return (
@@ -54,13 +65,27 @@ export default function AdminCategoriesPage() {
                   type="text"
                   className="border rounded px-2 py-1 w-full"
                   value={cat.name}
-                  onChange={e => renameCategory(cat.id, e.target.value)}
+                  onChange={async e => {
+                    const res = await fetch('/api/categories', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: cat.id, name: e.target.value }),
+                    });
+                    if (res.ok) {
+                      setCategories(prev => prev.map(c => (c.id === cat.id ? { ...c, name: e.target.value } : c)));
+                    }
+                  }}
                 />
               </td>
               <td className="border p-2 text-center">—</td>
               <td className="border p-2 text-center">
                 <button
-                  onClick={() => deleteCategory(cat.id)}
+                  onClick={async () => {
+                    const res = await fetch(`/api/categories?id=${cat.id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                      setCategories(prev => prev.filter(c => c.id !== cat.id));
+                    }
+                  }}
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
                 >
                   Удалить

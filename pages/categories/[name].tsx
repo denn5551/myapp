@@ -3,8 +3,6 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useCategoryStore } from '@/store/categoryStore';
-import { useAgentStore } from '@/store/agentStore';
 import Sidebar from '@/components/Sidebar';
 
 export default function AgentPage() {
@@ -15,8 +13,8 @@ export default function AgentPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const { categories } = useCategoryStore();
-  const { agents } = useAgentStore();
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
 
   const [categoryAgents, setCategoryAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,15 +23,32 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 };
 
   useEffect(() => {
-    if (router.isReady && router.query.name && agents.length > 0) {
-      const categoryName = Array.isArray(router.query.name) ? router.query.name[0] : router.query.name;
-      const currentCategory = categories.find(cat => cat.name === categoryName);
-      const categoryId = currentCategory?.id;
-      const filtered = agents.filter(agent => agent.categoryId === categoryId);
-      setCategoryAgents(filtered);
-      setLoading(false);
+    if (router.isReady) {
+      Promise.all([
+        fetch('/api/categories').then(res => res.json()),
+        fetch('/api/agents').then(res => res.json())
+      ]).then(([cats, ags]) => {
+        const mappedAgents = ags.map((a: any) => ({
+          ...a,
+          categoryId: a.category_id,
+          short: a.short_description,
+          full: a.description
+        }));
+        setCategories(cats);
+        setAgents(mappedAgents);
+
+        const categoryName = Array.isArray(router.query.name) ? router.query.name[0] : router.query.name;
+        const currentCategory = cats.find((c: any) => c.name === categoryName);
+        const categoryId = currentCategory?.id;
+        const filtered = mappedAgents.filter((ag: any) => ag.categoryId === categoryId);
+        setCategoryAgents(filtered);
+        setLoading(false);
+      }).catch(err => {
+        console.error('Data load error:', err);
+        setLoading(false);
+      });
     }
-  }, [router.isReady, router.query.name, agents, categories]);
+  }, [router.isReady, router.query.name]);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })

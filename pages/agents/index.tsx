@@ -1,8 +1,6 @@
 // pages/agents/index.tsx
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useCategoryStore } from '@/store/categoryStore';
-import { useAgentStore } from '@/store/agentStore';
 import Sidebar from '@/components/Sidebar';
 
 export default function AgentsPage() {
@@ -11,8 +9,8 @@ export default function AgentsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const { categories } = useCategoryStore();
-  const { agents } = useAgentStore();
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -26,6 +24,20 @@ export default function AgentsPage() {
           setLoading(false);
         }
       });
+
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(setCategories)
+      .catch(console.error);
+    fetch('/api/agents')
+      .then(res => res.json())
+      .then(data => setAgents(data.map((a: any) => ({
+        ...a,
+        categoryId: a.category_id,
+        short: a.short_description,
+        full: a.description
+      }))))
+      .catch(console.error);
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
