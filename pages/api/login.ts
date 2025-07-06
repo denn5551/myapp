@@ -3,9 +3,13 @@ import bcrypt from 'bcrypt';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { serialize } from 'cookie';
-import crypto from 'crypto';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.headers.origin) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
   const { email, password } = req.body;
@@ -17,22 +21,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return res.status(401).json({ message: 'Неверный пароль', success: false });
 
-  // Устанавливаем куки с правильными параметрами
+  // Устанавливаем только одну куку email, httpOnly: false чтобы клиент мог читать
   const cookieOptions = {
     path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false, // чтобы клиент мог читать email
+    secure: false, // отключаем для http
     sameSite: 'lax' as const,
     maxAge: 60 * 60 * 24 * 3 // 3 дня
   };
 
-  const token = crypto.randomBytes(16).toString('hex');
+  console.log('Set-Cookie:', serialize('email', email, cookieOptions));
 
-  res.setHeader('Set-Cookie', [
-    serialize('email', email, cookieOptions),
-    serialize('user_id', String(user.id), cookieOptions),
-    serialize('token', token, cookieOptions)
-  ]);
+  res.setHeader('Set-Cookie', serialize('email', email, cookieOptions));
 
   await db.close();
 
