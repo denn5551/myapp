@@ -7,10 +7,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     if (req.query.id) {
       const agent = await db.get('SELECT * FROM agents WHERE id = ?', req.query.id);
+      console.log('Loaded agents:', agent ? 1 : 0, agent);
       await db.close();
       return res.status(200).json(agent);
     }
     const agents = await db.all('SELECT * FROM agents');
+    console.log('Loaded agents:', agents.length, agents);
     await db.close();
     return res.status(200).json(agents);
   }
