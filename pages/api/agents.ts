@@ -25,7 +25,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db.run(
         `INSERT INTO agents (id, name, description, short_description, category_id, slug, is_active, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-        [id, name, full || '', short || '', categoryId, slug || '', isActive ? 1 : 0]
+        [
+          id,
+          name,
+          full || '',
+          short || '',
+          categoryId,
+          slug || id,
+          isActive ? 1 : 0,
+        ]
       );
       const newAgent = await db.get('SELECT * FROM agents WHERE id = ?', id);
       await db.close();
@@ -45,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await db.run(
         `UPDATE agents SET name=?, description=?, short_description=?, category_id=?, slug=?, is_active=? WHERE id=?`,
-        [name, full, short, categoryId, slug, isActive ? 1 : 0, id]
+        [name, full, short, categoryId, slug || id, isActive ? 1 : 0, id]
       );
       const updated = await db.get('SELECT * FROM agents WHERE id=?', id);
       await db.close();
