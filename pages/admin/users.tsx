@@ -1,5 +1,5 @@
 // pages/admin/users.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
 import Link from 'next/link';
@@ -14,35 +14,27 @@ interface User {
   subscriptionEnd: string;
 }
 
-const initialUsers: User[] = [
-  {
-    id: 1,
-    email: 'user1@example.com',
-    registeredAt: '2025-06-10',
-    subscriptionStatus: 'trial',
-    subscriptionStart: '2025-06-10',
-    subscriptionEnd: '2025-06-13',
-  },
-  {
-    id: 2,
-    email: 'user2@example.com',
-    registeredAt: '2025-06-09',
-    subscriptionStatus: 'active',
-    subscriptionStart: '2025-06-09',
-    subscriptionEnd: '2025-07-09',
-  },
-  {
-    id: 3,
-    email: 'user3@example.com',
-    registeredAt: '2025-06-01',
-    subscriptionStatus: 'expired',
-    subscriptionStart: '2025-06-01',
-    subscriptionEnd: '2025-06-04',
-  },
-];
+const initialUsers: User[] = [];
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState(initialUsers);
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then((r) => r.json())
+      .then((data) => {
+        const mapped = data.map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          registeredAt: u.created_at,
+          subscriptionStatus: 'active',
+          subscriptionStart: u.created_at,
+          subscriptionEnd: u.created_at,
+        }));
+        setUsers(mapped);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleStatusChange = (id: number, newStatus: User['subscriptionStatus']) => {
     setUsers(prev =>
