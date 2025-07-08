@@ -61,7 +61,7 @@ export default function Sidebar({
       {isMobile && sidebarOpen && (
         <div className="sidebar-overlay show" onClick={toggleSidebar}></div>
       )}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}> 
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'sidebar-closed'}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <h2>ИИ Помощники</h2>
