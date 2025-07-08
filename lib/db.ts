@@ -4,9 +4,18 @@ import path from 'path';
 import fs from 'fs';
 
 export async function openDb() {
-  let dbPath = path.join(process.cwd(), 'data', 'users.db');
-  if (!fs.existsSync(dbPath)) {
-    dbPath = path.join(process.cwd(), '..', '..', 'data', 'users.db');
+  const candidates = [
+    path.join(process.cwd(), 'data', 'users.db'),
+    path.join(process.cwd(), '..', 'data', 'users.db'),
+    path.join(process.cwd(), '..', '..', 'data', 'users.db'),
+    path.join(__dirname, '..', 'data', 'users.db'),
+    path.join(__dirname, '..', '..', 'data', 'users.db'),
+  ];
+
+  const dbPath = candidates.find((p) => fs.existsSync(p));
+  if (!dbPath) {
+    throw new Error('users.db not found');
   }
+
   return open({ filename: dbPath, driver: sqlite3.Database });
 }

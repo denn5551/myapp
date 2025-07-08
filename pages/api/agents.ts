@@ -40,6 +40,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json(newAgent);
     } catch (e: any) {
       await db.close();
+      if (e.message && e.message.includes('UNIQUE constraint failed')) {
+        return res.status(400).json({ message: 'Agent with same id or slug already exists' });
+      }
       return res.status(500).json({ message: e.message });
     }
   }
