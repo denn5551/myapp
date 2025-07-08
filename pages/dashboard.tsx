@@ -1,7 +1,6 @@
 // pages/dashboard.tsx
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useCategoryStore } from '@/store/categoryStore';
 import Sidebar from '@/components/Sidebar';
 
 
@@ -35,7 +34,6 @@ export default function Dashboard() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { categories } = useCategoryStore();
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })

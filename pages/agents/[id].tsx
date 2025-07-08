@@ -2,11 +2,9 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useRef, ReactElement } from 'react';
 import Link from 'next/link';
 import React from 'react';
-import agents from '../../data/agents.json';
-import { useCategoryStore } from '@/store/categoryStore';
+
 import Sidebar from '@/components/Sidebar';
 
-const categories = ['Здоровье', 'Финансы', 'Быт', 'Дети'];
 
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string): ReactElement[] => {
@@ -105,7 +103,6 @@ export default function AgentChat() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { categories } = useCategoryStore();
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {
@@ -154,8 +151,10 @@ export default function AgentChat() {
   // Получение имени ассистента
   useEffect(() => {
     if (router.isReady && typeof id === 'string') {
-      const found = agents.find(agent => agent.id === id);
-      setAssistantName(found?.name || 'Ассистент');
+      fetch('/api/agents?id=' + id)
+        .then((r) => r.json())
+        .then((a) => setAssistantName(a?.name || 'Ассистент'))
+        .catch(() => setAssistantName('Ассистент'));
     }
   }, [router.isReady, id]);
 

@@ -3,8 +3,6 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useCategoryStore } from '@/store/categoryStore';
-import { useAgentStore } from '@/store/agentStore';
 import Sidebar from '@/components/Sidebar';
 
 export default function AgentPage() {
@@ -15,8 +13,8 @@ export default function AgentPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const { categories } = useCategoryStore();
-  const { agents } = useAgentStore();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
 
   const [categoryAgents, setCategoryAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,11 +23,23 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 };
 
   useEffect(() => {
-    if (router.isReady && router.query.name && agents.length > 0) {
+    Promise.all([
+      fetch('/api/categories').then(r => r.json()),
+      fetch('/api/agents').then(r => r.json()),
+    ])
+      .then(([cats, ags]) => {
+        setCategories(cats);
+        setAgents(ags);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (router.isReady && router.query.name && agents.length > 0 && categories.length > 0) {
       const categoryName = Array.isArray(router.query.name) ? router.query.name[0] : router.query.name;
       const currentCategory = categories.find(cat => cat.name === categoryName);
       const categoryId = currentCategory?.id;
-      const filtered = agents.filter(agent => agent.categoryId === categoryId);
+      const filtered = agents.filter(agent => agent.category_id === categoryId);
       setCategoryAgents(filtered);
       setLoading(false);
     }
@@ -82,7 +92,7 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
             <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
               <div className="agent-card">
                 <h4 className="agent-title">{agent.name}</h4>
-                <p className="agent-description">{agent.short}</p>
+                <p className="agent-description">{agent.short_description}</p>
               </div>
             </Link>
           ))}

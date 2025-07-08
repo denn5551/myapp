@@ -1,12 +1,46 @@
 // pages/admin/categories.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import { useCategoryStore } from '@/store/categoryStore';
 
 export default function AdminCategoriesPage() {
-  const { categories, addCategory, renameCategory, deleteCategory } = useCategoryStore();
+  const [categories, setCategories] = useState<any[]>([]);
   const [newName, setNewName] = useState('');
+
+  const loadCategories = async () => {
+    const res = await fetch('/api/categories');
+    setCategories(await res.json());
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const addCategory = async (name: string) => {
+    const res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (res.ok) {
+      const cat = await res.json();
+      setCategories((prev) => [...prev, cat]);
+    }
+  };
+
+  const renameCategory = async (id: number, name: string) => {
+    await fetch('/api/categories', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name }),
+    });
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+  };
+
+  const deleteCategory = async (id: number) => {
+    await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+  };
 
   const handleAdd = () => {
     if (!newName.trim()) return;
