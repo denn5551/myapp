@@ -11,9 +11,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       .then(data => setSubscriptionStatus(data.subscriptionStatus));
   }, []);
 
+  const handleHamburger = () => {
+    document.dispatchEvent(new Event('toggleSidebar'));
+  };
+
   return (
     <>
       <header className="site-header">
+        <button className="hamburger-btn" onClick={handleHamburger}>☰</button>
         <div className="site-logo">AI Tools</div>
         <nav className="site-nav">
           <Link href="/dashboard">Агенты</Link>

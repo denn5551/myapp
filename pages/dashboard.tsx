@@ -36,6 +36,12 @@ export default function Dashboard() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
+    const handler = () => setSidebarOpen(prev => !prev);
+    document.addEventListener('toggleSidebar', handler);
+    return () => document.removeEventListener('toggleSidebar', handler);
+  }, []);
+
+  useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {

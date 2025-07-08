@@ -103,6 +103,12 @@ export default function AgentChat() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setSidebarOpen(prev => !prev);
+    document.addEventListener('toggleSidebar', handler);
+    return () => document.removeEventListener('toggleSidebar', handler);
+  }, []);
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {

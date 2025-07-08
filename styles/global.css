@@ -1692,3 +1692,76 @@ footer.site-footer {
   padding: 24px;
   overflow: auto;
 }
+
+/* Sidebar enhancements */
+.sidebar {
+  transition: width 0.2s;
+}
+.sidebar-link {
+  display: flex;
+  align-items: center;
+}
+.sidebar-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.link-text {
+  white-space: nowrap;
+}
+.accordion-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+.accordion-arrow {
+  margin-left: auto;
+  transition: transform 0.2s;
+  width: 16px;
+  height: 16px;
+}
+.accordion-arrow.open {
+  transform: rotate(90deg);
+}
+.sidebar-closed .link-text,
+.sidebar-closed .accordion-arrow {
+  display: none;
+}
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 12px;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: block;
+  }
+  .sidebar-overlay.show {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 99;
+  }
+}
+
+.sidebar__profile-avatar {
+  border-radius: 50%;
+}

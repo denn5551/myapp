@@ -13,6 +13,12 @@ export default function AgentPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = () => setSidebarOpen(prev => !prev);
+    document.addEventListener('toggleSidebar', handler);
+    return () => document.removeEventListener('toggleSidebar', handler);
+  }, []);
+
   const [categories, setCategories] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
 
