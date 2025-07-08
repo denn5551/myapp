@@ -2,31 +2,80 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import { useAgentStore } from '@/store/agentStore';
-import { useCategoryStore } from '@/store/categoryStore';
+import { useEffect } from 'react';
 
 export default function AdminAgentsPage() {
-  const { agents, addAgent, updateAgent, deleteAgent } = useAgentStore();
-  const { categories } = useCategoryStore();
+  const [agents, setAgents] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  const loadData = async () => {
+    const [cats, ags] = await Promise.all([
+      fetch('/api/categories').then((r) => r.json()),
+      fetch('/api/agents').then((r) => r.json()),
+    ]);
+    setCategories(cats);
+    setAgents(ags);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      setNewAgent((na) => ({ ...na, categoryId: categories[0].id }));
+    }
+  }, [categories]);
 
   const [newAgent, setNewAgent] = useState({
-    openaiId: '', // Изменено с id на openaiId
+    openaiId: '',
     name: '',
     short: '',
     full: '',
-    categoryId: categories[0]?.id || 1, // Используем существующую категорию
+    categoryId: 1,
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newAgent.openaiId || !newAgent.name) return;
-    addAgent(newAgent);
-    setNewAgent({ 
-      openaiId: '', 
-      name: '', 
-      short: '', 
-      full: '', 
-      categoryId: categories[0]?.id || 1 
+    const res = await fetch('/api/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: newAgent.openaiId,
+        name: newAgent.name,
+        short: newAgent.short,
+        full: newAgent.full,
+        categoryId: newAgent.categoryId,
+      }),
     });
+    if (res.ok) {
+      const agent = await res.json();
+      console.log('Saved agent:', agent);
+      const list = await fetch('/api/agents').then((r) => r.json());
+      console.log('Agents for render:', list);
+      setAgents(list);
+      setNewAgent({ openaiId: '', name: '', short: '', full: '', categoryId: 1 });
+    }
+  };
+
+  const updateAgent = async (id: string, updates: any) => {
+    const res = await fetch('/api/agents', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates }),
+    });
+    if (res.ok) {
+      const updatedAgent = await res.json();
+      console.log('Saved agent:', updatedAgent);
+      const list = await fetch('/api/agents').then((r) => r.json());
+      console.log('Agents for render:', list);
+      setAgents(list);
+    }
+  };
+
+  const deleteAgent = async (id: string) => {
+    await fetch(`/api/agents?id=${id}`, { method: 'DELETE' });
+    setAgents((prev) => prev.filter((a) => a.id !== id));
   };
 
   return (
@@ -104,8 +153,8 @@ export default function AdminAgentsPage() {
               <td className="border p-2">
                 <select
                   className="w-full border px-2 py-1 rounded"
-                  value={agent.categoryId}
-                  onChange={(e) => updateAgent(agent.id, { categoryId: +e.target.value })}
+          value={agent.category_id}
+          onChange={(e) => updateAgent(agent.id, { categoryId: +e.target.value })}
                 >
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -115,14 +164,14 @@ export default function AdminAgentsPage() {
               <td className="border p-2">
                 <input
                   className="w-full border px-2 py-1 rounded"
-                  value={agent.openaiId} // Изменено с agent.id на agent.openaiId
-                  onChange={(e) => updateAgent(agent.id, { openaiId: e.target.value })}
+                  value={agent.id}
+                  onChange={(e) => updateAgent(agent.id, { id: e.target.value })}
                 />
               </td>
               <td className="border p-2">
                 <input
                   className="w-full border px-2 py-1 rounded"
-                  value={agent.short}
+                  value={agent.short_description}
                   onChange={(e) => updateAgent(agent.id, { short: e.target.value })}
                 />
               </td>
@@ -130,7 +179,7 @@ export default function AdminAgentsPage() {
                 <textarea
                   className="w-full border px-2 py-1 rounded"
                   rows={2}
-                  value={agent.full}
+                  value={agent.full_description}
                   onChange={(e) => updateAgent(agent.id, { full: e.target.value })}
                 />
               </td>

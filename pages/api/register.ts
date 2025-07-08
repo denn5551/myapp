@@ -1,13 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcrypt';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import { openDb } from '../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const { email, password } = req.body;
-  const db = await open({ filename: './data/users.db', driver: sqlite3.Database });
+  const db = await openDb();
 
   await db.exec(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
