@@ -51,15 +51,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'PUT') {
     const { id, name, short, full, categoryId, slug, isActive } = req.body;
+    console.log('Update agent', id, req.body);
     if (!id) {
       await db.close();
       return res.status(400).json({ message: 'Missing id' });
     }
     try {
-      await db.run(
+      const result = await db.run(
         `UPDATE agents SET name=?, description=?, short_description=?, category_id=?, slug=?, is_active=? WHERE id=?`,
         [name, full, short, categoryId, slug || id, isActive ? 1 : 0, id]
       );
+      console.log('Rows updated:', result.changes);
+      if (result.changes === 0) {
+        await db.close();
+        return res.status(404).json({ message: 'Agent not found' });
+      }
       const updated = await db.get('SELECT * FROM agents WHERE id=?', id);
       await db.close();
       return res.status(200).json(updated);

@@ -50,17 +50,22 @@ export default function AdminAgentsPage() {
     });
     if (res.ok) {
       const agent = await res.json();
+      console.log('Saved agent:', agent);
       setAgents((prev) => [...prev, agent]);
       setNewAgent({ openaiId: '', name: '', short: '', full: '', categoryId: 1 });
     }
   };
 
   const updateAgent = async (id: string, updates: any) => {
-    await fetch('/api/agents', {
+    const res = await fetch('/api/agents', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...updates }),
     });
+    if (res.ok) {
+      const updatedAgent = await res.json();
+      console.log('Saved agent:', updatedAgent);
+    }
     setAgents((prev) =>
       prev.map((a) =>
         a.id === id
