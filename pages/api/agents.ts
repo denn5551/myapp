@@ -49,24 +49,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  if (req.method === 'PUT') {
-    const { id, name, short, full, categoryId, slug, isActive } = req.body;
+  if (req.method === 'PATCH' || req.method === 'PUT') {
+    const { id, name, short, full, categoryId } = req.body;
     console.log('Update agent', id, req.body);
     if (!id) {
       await db.close();
       return res.status(400).json({ message: 'Missing id' });
     }
     try {
-      const result = await db.run(
-        `UPDATE agents SET name=?, description=?, short_description=?, category_id=?, slug=?, is_active=? WHERE id=?`,
-        [name, full, short, categoryId, slug || id, isActive ? 1 : 0, id]
-      );
-      console.log('Rows updated:', result.changes);
-      if (result.changes === 0) {
+      const before = await db.get('SELECT * FROM agents WHERE id=?', id);
+      console.log('Before update:', before);
+      if (!before) {
         await db.close();
         return res.status(404).json({ message: 'Agent not found' });
       }
+
+      await db.run(
+        `UPDATE agents SET name=?, short_description=?, description=?, category_id=? WHERE id=?`,
+        [
+          name ?? before.name,
+          short ?? before.short_description,
+          full ?? before.description,
+          categoryId ?? before.category_id,
+          id,
+        ]
+      );
+
       const updated = await db.get('SELECT * FROM agents WHERE id=?', id);
+      console.log('After update:', updated);
       await db.close();
       return res.status(200).json(updated);
     } catch (e: any) {
