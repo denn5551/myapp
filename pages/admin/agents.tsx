@@ -51,35 +51,26 @@ export default function AdminAgentsPage() {
     if (res.ok) {
       const agent = await res.json();
       console.log('Saved agent:', agent);
-      setAgents((prev) => [...prev, agent]);
+      const list = await fetch('/api/agents').then((r) => r.json());
+      console.log('Agents for render:', list);
+      setAgents(list);
       setNewAgent({ openaiId: '', name: '', short: '', full: '', categoryId: 1 });
     }
   };
 
   const updateAgent = async (id: string, updates: any) => {
     const res = await fetch('/api/agents', {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...updates }),
     });
     if (res.ok) {
       const updatedAgent = await res.json();
       console.log('Saved agent:', updatedAgent);
+      const list = await fetch('/api/agents').then((r) => r.json());
+      console.log('Agents for render:', list);
+      setAgents(list);
     }
-    setAgents((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              name: updates.name ?? a.name,
-              category_id: updates.categoryId ?? a.category_id,
-              short_description: updates.short ?? a.short_description,
-              description: updates.full ?? a.description,
-              id: updates.id ?? a.id,
-            }
-          : a
-      )
-    );
   };
 
   const deleteAgent = async (id: string) => {
