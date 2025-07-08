@@ -1,18 +1,32 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { openDb } from '../../lib/db';
 
+function mapAgent(row: any) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    name: row.name,
+    short_description: row.short_description,
+    full_description: row.description,
+    category_id: row.category_id,
+    created_at: row.created_at,
+  };
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const db = await openDb();
 
   if (req.method === 'GET') {
     if (req.query.id) {
-      const agent = await db.get('SELECT * FROM agents WHERE id = ?', req.query.id);
-      console.log('Loaded agents:', agent ? 1 : 0, agent);
+      const row = await db.get('SELECT * FROM agents WHERE id = ?', req.query.id);
+      const agent = mapAgent(row);
+      console.log('API agents:', agent ? 1 : 0, agent);
       await db.close();
       return res.status(200).json(agent);
     }
-    const agents = await db.all('SELECT * FROM agents');
-    console.log('Loaded agents:', agents.length, agents);
+    const rows = await db.all('SELECT * FROM agents');
+    const agents = rows.map(mapAgent);
+    console.log('API agents:', agents.length, agents);
     await db.close();
     return res.status(200).json(agents);
   }
@@ -37,7 +51,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           isActive ? 1 : 0,
         ]
       );
-      const newAgent = await db.get('SELECT * FROM agents WHERE id = ?', id);
+      const row = await db.get('SELECT * FROM agents WHERE id = ?', id);
+      const newAgent = mapAgent(row);
       await db.close();
       return res.status(200).json(newAgent);
     } catch (e: any) {
@@ -75,7 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ]
       );
 
-      const updated = await db.get('SELECT * FROM agents WHERE id=?', id);
+      const row = await db.get('SELECT * FROM agents WHERE id=?', id);
+      const updated = mapAgent(row);
       console.log('After update:', updated);
       await db.close();
       return res.status(200).json(updated);

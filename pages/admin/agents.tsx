@@ -179,7 +179,7 @@ export default function AdminAgentsPage() {
                 <textarea
                   className="w-full border px-2 py-1 rounded"
                   rows={2}
-                  value={agent.description}
+                  value={agent.full_description}
                   onChange={(e) => updateAgent(agent.id, { full: e.target.value })}
                 />
               </td>
