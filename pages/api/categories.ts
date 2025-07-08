@@ -6,7 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     const categories = await db.all('SELECT id, name, description FROM agent_categories');
-    console.log('Loaded categories:', categories.length, categories);
+    console.log('API categories:', categories.length, categories);
     await db.close();
     return res.status(200).json(categories);
   }
