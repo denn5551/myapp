@@ -20,12 +20,23 @@ export default function Sidebar({
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isCategoriesOpen, setCategoriesOpen] = useState(true);
+  const [isFavoritesOpen, setFavoritesOpen] = useState(true);
+  const [isRecentOpen, setRecentOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetch('/api/categories')
       .then((res) => res.json())
       .then(setCategories)
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
 	const toggleUserMenu = () => {
@@ -46,58 +57,110 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+    <>
+      {isMobile && sidebarOpen && (
+        <div className="sidebar-overlay show" onClick={toggleSidebar}></div>
+      )}
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}> 
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <h2>ИИ Помощники</h2>
           </div>
           <button className="sidebar-toggle" onClick={toggleSidebar}>
-            {sidebarOpen ? '←' : '→'}
+            {isMobile && sidebarOpen ? '✕' : sidebarOpen ? '←' : '→'}
           </button>
         </div>
 
         <div className="sidebar-content">
           <div className="sidebar-section">
-			<h4><a className="color" href="/dashboard">Главная</a></h4>
-            <h4>Категории</h4>
-            <ul className="sidebar-menu">			
-              {categories.map(cat => (
-				  <li key={cat.id} className="sidebar-menu-item">
-					<Link href={`/categories/${cat.name}`} className="sidebar-link">
-					  {cat.name}
-					</Link>
-				  </li>
-				))}
-			   <li className="sidebar-menu-item active">
-                <Link href="/agents" className="sidebar-link sidebar-link-all">
-                 📋 Смотреть все категории
-                </Link>
-              </li>
-            </ul>
+            <Link href="/dashboard" className="sidebar-link">
+              <span className="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.75L12 3l9 6.75V21a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H3.75A.75.75 0 013 21V9.75z"/></svg>
+              </span>
+              <span className="link-text">Главная</span>
+            </Link>
           </div>
 
           <div className="sidebar-section">
-            <h4>Избранные чаты</h4>
-            <ul className="sidebar-menu">
-              <li className="sidebar-menu-item">
-                <Link href="#" className="sidebar-link">ИИ психолог</Link>
-              </li>
-              <li className="sidebar-menu-item">
-                <Link href="#" className="sidebar-link">Фитнес тренер</Link>
-              </li>
-            </ul>
+            <button className="accordion-trigger" onClick={() => setCategoriesOpen(!isCategoriesOpen)}>
+              <span className="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/></svg>
+              </span>
+              <span className="link-text">Категории</span>
+              <span className={`accordion-arrow ${isCategoriesOpen ? 'open' : ''}`}>
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
+              </span>
+            </button>
+            {isCategoriesOpen && (
+              <ul className="sidebar-menu">
+                {categories.map(cat => (
+                  <li key={cat.id} className="sidebar-menu-item">
+                    <Link href={`/categories/${cat.name}`} className="sidebar-link">
+                      <span className="sidebar-icon" />
+                      <span className="link-text">{cat.name}</span>
+                    </Link>
+                  </li>
+                ))}
+                <li className="sidebar-menu-item active">
+                  <Link href="/agents" className="sidebar-link sidebar-link-all">
+                    <span className="sidebar-icon" />
+                    <span className="link-text">Смотреть все категории</span>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
 
           <div className="sidebar-section">
-            <h4>Последние Чаты</h4>
-            <ul className="sidebar-menu">
-              <li className="sidebar-menu-item">
-                <Link href="#" className="sidebar-link">ИИ психолог</Link>
-              </li>
-              <li className="sidebar-menu-item">
-                <Link href="#" className="sidebar-link">Фитнес тренер</Link>
-              </li>
-            </ul>
+            <button className="accordion-trigger" onClick={() => setFavoritesOpen(!isFavoritesOpen)}>
+              <span className="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27l6.18 3.73-1.64-7.03L21 9.24l-7.19-.61L12 2 10.19 8.63 3 9.24l5.46 4.73L6.82 21z"/></svg>
+              </span>
+              <span className="link-text">Избранные чаты</span>
+              <span className={`accordion-arrow ${isFavoritesOpen ? 'open' : ''}`}>
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
+              </span>
+            </button>
+            {isFavoritesOpen && (
+              <ul className="sidebar-menu">
+                <li className="sidebar-menu-item">
+                  <Link href="#" className="sidebar-link">
+                    <span className="link-text">ИИ психолог</span>
+                  </Link>
+                </li>
+                <li className="sidebar-menu-item">
+                  <Link href="#" className="sidebar-link">
+                    <span className="link-text">Фитнес тренер</span>
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </div>
+
+          <div className="sidebar-section">
+            <button className="accordion-trigger" onClick={() => setRecentOpen(!isRecentOpen)}>
+              <span className="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 6a6 6 0 106 6H12V6zm-7.5 6a7.5 7.5 0 1112.9 5.3l1.6 1.6a.75.75 0 11-1.06 1.06l-1.6-1.6A7.5 7.5 0 014.5 12z"/></svg>
+              </span>
+              <span className="link-text">Последние чаты</span>
+              <span className={`accordion-arrow ${isRecentOpen ? 'open' : ''}`}>
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
+              </span>
+            </button>
+            {isRecentOpen && (
+              <ul className="sidebar-menu">
+                <li className="sidebar-menu-item">
+                  <Link href="#" className="sidebar-link">
+                    <span className="link-text">ИИ психолог</span>
+                  </Link>
+                </li>
+                <li className="sidebar-menu-item">
+                  <Link href="#" className="sidebar-link">
+                    <span className="link-text">Фитнес тренер</span>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </div>
         </div>
 
@@ -105,10 +168,10 @@ export default function Sidebar({
           <Link href="/subscribe" className="subscribe-button">
             Оформить подписку
           </Link>
-          
+
           <div className="user-info">
             <button className="user-info-button" onClick={toggleUserMenu}>
-              <div className="user-avatar">
+              <div className="user-avatar sidebar__profile-avatar">
                 {userEmail.charAt(0).toUpperCase()}
               </div>
               <div className="user-details">
@@ -125,7 +188,7 @@ export default function Sidebar({
                 {userMenuOpen ? '▲' : '▼'}
               </div>
             </button>
-            
+
             {userMenuOpen && (
               <div className="user-menu">
                 <Link href="/settings" className="user-menu-item">
@@ -146,6 +209,7 @@ export default function Sidebar({
           </div>
         </div>
       </aside>
+    </>
   );
 }
  
