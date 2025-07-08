@@ -62,6 +62,8 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
     return <div>Загрузка...</div>;
   }
 
+  console.log('Agents for render:', categoryAgents);
+
   return (
     <div className="dashboard-layout">
       <Head>

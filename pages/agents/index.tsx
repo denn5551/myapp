@@ -44,6 +44,8 @@ export default function AgentsPage() {
     return <div>Загрузка...</div>;
   }
 
+  console.log('Agents for render:', agents);
+
   return (
     <div className="dashboard-layout">
       <Sidebar
