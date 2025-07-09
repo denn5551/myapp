@@ -683,16 +683,6 @@ footer.site-footer {
   margin-top: 40px;
 }
 
-/* ✅ Плашка триала */
-.trial-banner {
-  background-color: #FEF3C7;
-  color: #92400E;
-  padding: 12px 20px;
-  font-size: 14px;
-  text-align: center;
-  border-top: 1px solid #FDE68A;
-  border-bottom: 1px solid #FDE68A;
-}
 
 .dashboard-layout {
           display: flex;
