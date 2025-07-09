@@ -90,20 +90,14 @@ export default function Dashboard() {
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
-          <div className="header__user">
-            <span className="user-avatar" onClick={toggleUserMenu}>
+          <div className="header__user" onClick={toggleUserMenu}>
+            <span className="user-avatar">
               {email.charAt(0).toUpperCase()}
             </span>
             {userMenuOpen && (
               <ul className="dropdown-menu">
                 <li>
-                  <Link href="/settings">Настройки</Link>
-                </li>
-                <li>
                   <Link href="/profile">Профиль</Link>
-                </li>
-                <li>
-                  <Link href="/help">Помощь</Link>
                 </li>
                 <li>
                   <button onClick={handleLogout}>Выйти</button>

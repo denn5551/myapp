@@ -1821,6 +1821,7 @@ footer.site-footer {
 
 .header__user {
   margin-left: auto;
+  position: relative;
 }
 
 .user-avatar {
@@ -1836,8 +1837,15 @@ footer.site-footer {
   cursor: pointer;
 }
 
+.header__title {
+  margin: 0 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  display: block;
+}
+
 @media (max-width: 767px) {
-  .header__title.section-title {
+  .header__title {
     display: none;
   }
   .section-title {
@@ -1849,7 +1857,7 @@ footer.site-footer {
   .section-title {
     display: none;
   }
-  .header__title.section-title {
+  .header__title {
     display: block;
   }
 }

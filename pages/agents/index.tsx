@@ -11,6 +11,7 @@ export default function AgentsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const pageTitle = 'Каталог ИИ-помощников';
 
   useEffect(() => {
     setSidebarOpen(window.innerWidth > 768);
@@ -80,20 +81,15 @@ export default function AgentsPage() {
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
-          <div className="header__user">
-            <span className="user-avatar" onClick={toggleUserMenu}>
+          <h1 className="header__title">{pageTitle}</h1>
+          <div className="header__user" onClick={toggleUserMenu}>
+            <span className="user-avatar">
               {email.charAt(0).toUpperCase()}
             </span>
             {userMenuOpen && (
               <ul className="dropdown-menu">
                 <li>
-                  <Link href="/settings">Настройки</Link>
-                </li>
-                <li>
                   <Link href="/profile">Профиль</Link>
-                </li>
-                <li>
-                  <Link href="/help">Помощь</Link>
                 </li>
                 <li>
                   <button onClick={handleLogout}>Выйти</button>
