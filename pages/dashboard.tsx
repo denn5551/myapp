@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
+import HamburgerIcon from '@/components/HamburgerIcon';
+import CloseIcon from '@/components/CloseIcon';
 
 
 const popularAgents = [
@@ -32,8 +34,13 @@ const popularAgents = [
 export default function Dashboard() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
+
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -56,6 +63,17 @@ export default function Dashboard() {
     setUserMenuOpen(!userMenuOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/logout', { credentials: 'include' });
+      if (res.ok) {
+        window.location.href = '/auth/login';
+      }
+    } catch (e) {
+      console.error('Ошибка при выходе:', e);
+    }
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar */}
@@ -68,6 +86,26 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
+        <header className="lk-header">
+          <button className="mobile-hamburger" onClick={toggleSidebar}>
+            {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
+          <div className="header__user" onClick={toggleUserMenu}>
+            <span className="user-avatar">
+              {email.charAt(0).toUpperCase()}
+            </span>
+            {userMenuOpen && (
+              <ul className="dropdown-menu">
+                <li>
+                  <Link href="/profile">Профиль</Link>
+                </li>
+                <li>
+                  <button onClick={handleLogout}>Выйти</button>
+                </li>
+              </ul>
+            )}
+          </div>
+        </header>
         <div className="content-header">
           <h2>Добро пожаловать!</h2>
           {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (

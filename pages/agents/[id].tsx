@@ -4,6 +4,8 @@ import Link from 'next/link';
 import React from 'react';
 
 import Sidebar from '@/components/Sidebar';
+import HamburgerIcon from '@/components/HamburgerIcon';
+import CloseIcon from '@/components/CloseIcon';
 
 
 // Функция для форматирования текста с абзацами
@@ -101,8 +103,13 @@ export default function AgentChat() {
   const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
+
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {
@@ -166,6 +173,17 @@ export default function AgentChat() {
     setUserMenuOpen(!userMenuOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/logout', { credentials: 'include' });
+      if (res.ok) {
+        window.location.href = '/auth/login';
+      }
+    } catch (e) {
+      console.error('Ошибка при выходе:', e);
+    }
+  };
+
   async function sendMessage() {
     if (!input.trim() || typeof id !== 'string') return;
 
@@ -221,6 +239,26 @@ export default function AgentChat() {
 
       {/* Main Chat Content */}
       <main className={`chat-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
+        <header className="lk-header">
+          <button className="mobile-hamburger" onClick={toggleSidebar}>
+            {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
+          <div className="header__user" onClick={toggleUserMenu}>
+            <span className="user-avatar">
+              {email.charAt(0).toUpperCase()}
+            </span>
+            {userMenuOpen && (
+              <ul className="dropdown-menu">
+                <li>
+                  <Link href="/profile">Профиль</Link>
+                </li>
+                <li>
+                  <button onClick={handleLogout}>Выйти</button>
+                </li>
+              </ul>
+            )}
+          </div>
+        </header>
         <div className="chat-header">
           <h1 className="chat-title">Чат с {assistantName}</h1>
           <button
