@@ -245,27 +245,24 @@ export default function AgentChat() {
           </button>
           <div className="lk-header__profile">
             <button className="user-info-button" onClick={toggleUserMenu}>
-              <div className="lk-header__avatar">{email.charAt(0).toUpperCase()}</div>
-              <div className="user-details">
-                <div className="user-email">{email}</div>
-                <div className={`subscription-badge ${subscriptionStatus}`}>{
-                  subscriptionStatus === 'trial'
-                    ? 'Пробный период'
-                    : subscriptionStatus === 'active'
-                      ? 'Активна'
-                      : 'Истекла'
-                }</div>
-              </div>
+              <div className="profile-avatar">{email.charAt(0).toUpperCase()}</div>
               <div className="chevron">{userMenuOpen ? '▲' : '▼'}</div>
             </button>
             {userMenuOpen && (
-              <div className="user-menu">
-                <Link href="/settings" className="user-menu-item">Настройки</Link>
-                <Link href="/profile" className="user-menu-item">Профиль</Link>
-                <Link href="/help" className="user-menu-item">Помощь</Link>
-                <hr className="user-menu-separator" />
-                <button onClick={handleLogout} className="user-menu-item">Выйти</button>
-              </div>
+              <ul className="dropdown-menu">
+                <li>
+                  <Link href="/settings">Настройки</Link>
+                </li>
+                <li>
+                  <Link href="/profile">Профиль</Link>
+                </li>
+                <li>
+                  <Link href="/help">Помощь</Link>
+                </li>
+                <li>
+                  <button onClick={handleLogout}>Выйти</button>
+                </li>
+              </ul>
             )}
           </div>
         </header>
