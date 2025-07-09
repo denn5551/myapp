@@ -7,19 +7,29 @@ import { useEffect } from 'react';
 export default function AdminAgentsPage() {
   const [agents, setAgents] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+  const [pageCount, setPageCount] = useState(1);
 
-  const loadData = async () => {
-    const [cats, ags] = await Promise.all([
-      fetch('/api/categories').then((r) => r.json()),
-      fetch('/api/agents').then((r) => r.json()),
-    ]);
+  const loadCategories = async () => {
+    const cats = await fetch('/api/categories').then((r) => r.json());
     setCategories(cats);
-    setAgents(ags);
+  };
+
+  const loadAgents = async (p = page, pp = perPage) => {
+    const res = await fetch(`/api/admin/agents?page=${p}&perPage=${pp}`);
+    const data = await res.json();
+    setAgents(data.agents);
+    setPageCount(data.pageCount);
   };
 
   useEffect(() => {
-    loadData();
+    loadCategories();
   }, []);
+
+  useEffect(() => {
+    loadAgents();
+  }, [page, perPage]);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -51,31 +61,26 @@ export default function AdminAgentsPage() {
     if (res.ok) {
       const agent = await res.json();
       console.log('Saved agent:', agent);
-      const list = await fetch('/api/agents').then((r) => r.json());
-      console.log('Agents for render:', list);
-      setAgents(list);
+      await loadAgents(1, perPage);
+      setPage(1);
       setNewAgent({ openaiId: '', name: '', short: '', full: '', categoryId: 1 });
     }
   };
 
   const updateAgent = async (id: string, updates: any) => {
-    const res = await fetch('/api/agents', {
+    const res = await fetch(`/api/admin/agents?id=${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ...updates }),
+      body: JSON.stringify({ ...updates }),
     });
     if (res.ok) {
-      const updatedAgent = await res.json();
-      console.log('Saved agent:', updatedAgent);
-      const list = await fetch('/api/agents').then((r) => r.json());
-      console.log('Agents for render:', list);
-      setAgents(list);
+      await loadAgents();
     }
   };
 
   const deleteAgent = async (id: string) => {
     await fetch(`/api/agents?id=${id}`, { method: 'DELETE' });
-    setAgents((prev) => prev.filter((a) => a.id !== id));
+    await loadAgents();
   };
 
   return (
@@ -121,7 +126,7 @@ export default function AdminAgentsPage() {
           value={newAgent.full}
           onChange={(e) => setNewAgent({ ...newAgent, full: e.target.value })}
         />
-        <button
+      <button
           onClick={handleAdd}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
@@ -129,6 +134,42 @@ export default function AdminAgentsPage() {
         </button>
       </div>
 
+      <div className="flex items-center gap-3 mb-2">
+        <label>
+          Показывать по:{' '}
+          <select
+            className="border px-2 py-1 rounded"
+            value={perPage}
+            onChange={(e) => {
+              setPage(1);
+              setPerPage(+e.target.value);
+            }}
+          >
+            {[25, 50, 100].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="px-2 py-1 border rounded"
+          disabled={page <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+        >
+          ‹
+        </button>
+        <span>
+          Страница {page} из {pageCount}
+        </span>
+        <button
+          className="px-2 py-1 border rounded"
+          disabled={page >= pageCount}
+          onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+        >
+          ›
+        </button>
+      </div>
+
+      <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
       <table className="w-full table-auto border-collapse text-sm">
         <thead>
           <tr className="bg-gray-100">
@@ -183,7 +224,12 @@ export default function AdminAgentsPage() {
                   onChange={(e) => updateAgent(agent.id, { full: e.target.value })}
                 />
               </td>
-              <td className="border p-2 text-center">
+              <td className="border p-2 text-center flex items-center justify-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={agent.display_on_main}
+                  onChange={(e) => updateAgent(agent.id, { displayOnMain: e.target.checked })}
+                />
                 <button
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
                   onClick={() => deleteAgent(agent.id)}
@@ -195,6 +241,7 @@ export default function AdminAgentsPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </>
   );
 }
