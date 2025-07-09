@@ -6,8 +6,12 @@ import Sidebar from '@/components/Sidebar';
 export default function AgentsPage() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
 
   useEffect(() => {
     const handler = () => setSidebarOpen(prev => !prev);
