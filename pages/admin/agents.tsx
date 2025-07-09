@@ -13,7 +13,11 @@ export default function AdminAgentsPage() {
 
   const loadCategories = async () => {
     const data = await fetch('/api/categories').then((r) => r.json());
-    const list = Array.isArray(data.categories) ? data.categories : [];
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data.categories)
+        ? data.categories
+        : [];
     setCategories(list);
   };
 
