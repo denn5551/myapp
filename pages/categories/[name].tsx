@@ -9,6 +9,9 @@ import CloseIcon from '@/components/CloseIcon';
 
 export default function AgentPage() {
   const router = useRouter();
+  const categoryTitle = Array.isArray(router.query.name)
+    ? router.query.name[0]
+    : router.query.name || '';
 
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
@@ -100,11 +103,11 @@ const handleLogout = async () => {
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
-          <div className="lk-header__profile">
-            <button className="user-info-button" onClick={toggleUserMenu}>
-              <div className="profile-avatar">{email.charAt(0).toUpperCase()}</div>
-              <div className="chevron">{userMenuOpen ? '▲' : '▼'}</div>
-            </button>
+          <h1 className="header__title text-2xl font-bold">{categoryTitle}</h1>
+          <div className="header__user">
+            <span className="user-avatar" onClick={toggleUserMenu}>
+              {email.charAt(0).toUpperCase()}
+            </span>
             {userMenuOpen && (
               <ul className="dropdown-menu">
                 <li>
@@ -123,7 +126,7 @@ const handleLogout = async () => {
             )}
           </div>
         </header>
-        <h1 className="text-2xl font-bold mb-6">Агенты категории</h1>
+        <h1 className="section-title text-2xl font-bold mb-6">{categoryTitle}</h1>
 		
 		 {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
             <div className="access-warning">

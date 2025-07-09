@@ -243,11 +243,10 @@ export default function AgentChat() {
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
-          <div className="lk-header__profile">
-            <button className="user-info-button" onClick={toggleUserMenu}>
-              <div className="profile-avatar">{email.charAt(0).toUpperCase()}</div>
-              <div className="chevron">{userMenuOpen ? '▲' : '▼'}</div>
-            </button>
+          <div className="header__user">
+            <span className="user-avatar" onClick={toggleUserMenu}>
+              {email.charAt(0).toUpperCase()}
+            </span>
             {userMenuOpen && (
               <ul className="dropdown-menu">
                 <li>

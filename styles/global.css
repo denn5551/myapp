@@ -1791,21 +1791,7 @@ footer.site-footer {
   border-bottom: 1px solid var(--border-color);
 }
 
-.lk-header__profile {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  position: relative;
-}
-
-.lk-header__avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-avatar {
+.user-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1831,4 +1817,39 @@ footer.site-footer {
 
 .dropdown-menu li:hover {
   background: var(--hover-bg);
+}
+
+.header__user {
+  margin-left: auto;
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #ccc;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .header__title.section-title {
+    display: none;
+  }
+  .section-title {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .section-title {
+    display: none;
+  }
+  .header__title.section-title {
+    display: block;
+  }
 }
