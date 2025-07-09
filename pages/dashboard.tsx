@@ -6,28 +6,12 @@ import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
 
 
-const popularAgents = [
-  {
-    id: 'asst_jYPLYZOj82vtSYUviIOwAbRx',
-    name: 'ИИ-психолог',
-    description: 'Помогает справиться со стрессом и тревогой.',
-  },
-  {
-    id: 'asst_2',
-    name: 'Финансовый агент',
-    description: 'Поможет с бюджетом и подушкой безопасности.',
-  },
-  {
-    id: 'asst_3',
-    name: 'Помощник по готовке',
-    description: 'Подберёт рецепты из ваших продуктов.',
-  },
-  {
-    id: 'asst_4',
-    name: 'Фитнес-тренер',
-    description: 'Составит план тренировок дома или в зале.',
-  }
-];
+interface Agent {
+  id: string;
+  name: string;
+  short_description: string;
+  full_description?: string;
+}
 
 
 
@@ -36,6 +20,7 @@ export default function Dashboard() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [popularAgents, setPopularAgents] = useState<Agent[]>([]);
 
   useEffect(() => {
     setSidebarOpen(window.innerWidth > 768);
@@ -53,6 +38,13 @@ export default function Dashboard() {
           setSubscriptionStatus(data.subscriptionStatus || 'expired');
         }
       });
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/dashboard')
+      .then(res => res.json())
+      .then(data => setPopularAgents(data.agents || []))
+      .catch(() => {});
   }, []);
 
   const toggleSidebar = () => {
@@ -127,7 +119,7 @@ export default function Dashboard() {
               <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
                 <div className="agent-card">
                   <h4 className="agent-title">{agent.name}</h4>
-                  <p className="agent-description">{agent.description}</p>
+                  <p className="agent-description">{agent.short_description}</p>
                 </div>
               </Link>
             ))}
@@ -142,5 +134,4 @@ export default function Dashboard() {
 
  
     </div>
-  );
-}
+  );}

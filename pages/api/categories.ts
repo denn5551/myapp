@@ -5,10 +5,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const db = await openDb();
 
   if (req.method === 'GET') {
-    const categories = await db.all('SELECT id, name, description FROM agent_categories');
-    console.log('API categories:', categories.length, categories);
+    const page = parseInt((req.query.page as string) || '1');
+    const perPage = parseInt((req.query.perPage as string) || '5');
+    const offset = (page - 1) * perPage;
+    const totalRow = await db.get('SELECT COUNT(*) as count FROM agent_categories');
+    const categories = await db.all(
+      'SELECT id, name, description FROM agent_categories LIMIT ? OFFSET ?',
+      [perPage, offset]
+    );
+    const pageCount = Math.ceil(totalRow.count / perPage);
     await db.close();
-    return res.status(200).json(categories);
+    return res.status(200).json({ categories, total: totalRow.count, page, perPage, pageCount });
   }
 
   if (req.method === 'POST') {
