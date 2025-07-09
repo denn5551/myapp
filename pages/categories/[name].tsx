@@ -4,14 +4,24 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
+import HamburgerIcon from '@/components/HamburgerIcon';
+import CloseIcon from '@/components/CloseIcon';
 
 export default function AgentPage() {
   const router = useRouter();
+  const categoryTitle = Array.isArray(router.query.name)
+    ? router.query.name[0]
+    : router.query.name || '';
 
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
+
 
   const [categories, setCategories] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -19,7 +29,18 @@ export default function AgentPage() {
   const [categoryAgents, setCategoryAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-const toggleSidebar = () => { setSidebarOpen(prev => !prev);
+const toggleSidebar = () => { setSidebarOpen(prev => !prev); };
+const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
+
+const handleLogout = async () => {
+  try {
+    const res = await fetch('/api/logout', { credentials: 'include' });
+    if (res.ok) {
+      window.location.href = '/auth/login';
+    }
+  } catch (e) {
+    console.error('Ошибка при выходе:', e);
+  }
 };
 
   useEffect(() => {
@@ -78,7 +99,28 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 />
 
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'} p-6`}>
-        <h1 className="text-2xl font-bold mb-6">Агенты категории</h1>
+        <header className="lk-header">
+          <button className="mobile-hamburger" onClick={toggleSidebar}>
+            {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
+          <h1 className="header__title">{categoryTitle}</h1>
+          <div className="header__user" onClick={toggleUserMenu}>
+            <span className="user-avatar">
+              {email.charAt(0).toUpperCase()}
+            </span>
+            {userMenuOpen && (
+              <ul className="dropdown-menu">
+                <li>
+                  <Link href="/profile">Профиль</Link>
+                </li>
+                <li>
+                  <button onClick={handleLogout}>Выйти</button>
+                </li>
+              </ul>
+            )}
+          </div>
+        </header>
+        <h1 className="section-title text-2xl font-bold mb-6">{categoryTitle}</h1>
 		
 		 {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
             <div className="access-warning">
