@@ -28,7 +28,7 @@ export default function CategoriesPage() {
   const [perPage, setPerPage] = useState(5);
   const [pageCount, setPageCount] = useState(1);
 
-  const loadCategories = async (p = page, pp = perPage) => {
+  const loadCategories = async (p: number, pp: number) => {
     const res = await fetch(`/api/categories?page=${p}&perPage=${pp}`);
     const data = await res.json();
     const list = Array.isArray(data.categories) ? data.categories : [];
@@ -37,30 +37,23 @@ export default function CategoriesPage() {
   };
 
   useEffect(() => {
-    loadCategories();
-  }, [page, perPage]);
-
-  useEffect(() => {
     if (!router.isReady) return;
     const qp = Array.isArray(router.query.page) ? router.query.page[0] : router.query.page;
     const qpp = Array.isArray(router.query.perPage) ? router.query.perPage[0] : router.query.perPage;
-    setPage(qp ? parseInt(qp as string) : 1);
-    setPerPage(qpp ? parseInt(qpp as string) : 5);
+    const p = qp ? parseInt(qp as string) : 1;
+    const pp = qpp ? parseInt(qpp as string) : 5;
+    setPage(p);
+    setPerPage(pp);
+    loadCategories(p, pp);
   }, [router.isReady, router.query.page, router.query.perPage]);
-
-  useEffect(() => {
-    if (router.isReady) {
-      loadCategories();
-    }
-  }, [router.isReady, page, perPage]);
 
   return (
     <Layout>
       <h1 className="text-2xl mb-4">Все категории</h1>
       <div className="categories-grid">
         {categories.map(cat => (
-          <CategoryCard key={cat.id} {...cat}>
-            {cat.agents.slice(0,4).map(a => (
+          <CategoryCard key={cat.id} {...cat} href={`/categories/${cat.slug}`}>
+            {cat.agents.slice(0, 4).map(a => (
               <AgentCard key={a.id} {...a} />
             ))}
           </CategoryCard>
