@@ -10,8 +10,12 @@ export default function AgentPage() {
 
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
 
   useEffect(() => {
     const handler = () => setSidebarOpen(prev => !prev);

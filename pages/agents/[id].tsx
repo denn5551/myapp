@@ -101,8 +101,12 @@ export default function AgentChat() {
   const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
 
   useEffect(() => {
     const handler = () => setSidebarOpen(prev => !prev);
