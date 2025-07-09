@@ -22,6 +22,8 @@ export default function CategoryPage() {
       .catch(() => setLoading(false));
   }, [slug]);
 
+  console.log('Loaded agents for category:', agents);
+
   if (loading) {
     return (
       <Layout>
@@ -42,9 +44,11 @@ export default function CategoryPage() {
     <Layout>
       <h1 className="text-2xl font-bold mb-4">{category.name}</h1>
       <div className="agents-grid">
-        {agents.map(agent => (
-          <AgentCard key={agent.id} {...agent} />
-        ))}
+        {agents.length === 0 ? (
+          <p>Агенты не найдены</p>
+        ) : (
+          agents.map(agent => <AgentCard key={agent.id} {...agent} />)
+        )}
       </div>
     </Layout>
   );
