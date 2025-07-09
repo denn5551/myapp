@@ -9,10 +9,10 @@ function AdminComponent() {
   return React.createElement('button', { onClick: () => setPage(2) }, 'next');
 }
 
-function PublicComponent() {
+function CategoriesComponent() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(5);
-  useEffect(() => { fetch(`/api/agents?page=${page}&perPage=${perPage}`); }, [page, perPage]);
+  useEffect(() => { fetch(`/api/categories?page=${page}&perPage=${perPage}`); }, [page, perPage]);
   return React.createElement('button', { onClick: () => setPage(2) }, 'next');
 }
 
@@ -27,8 +27,8 @@ describe('pagination ui', () => {
     expect((fetch as jest.Mock).mock.calls[0][0]).toContain('page=2');
   });
 
-  it('loads next page on public', async () => {
-    render(React.createElement(PublicComponent));
+  it('loads next page on categories page', async () => {
+    render(React.createElement(CategoriesComponent));
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     (fetch as jest.Mock).mockClear();
     fireEvent.click(document.querySelector('button')!);

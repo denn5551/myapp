@@ -86,7 +86,7 @@ export default function Sidebar({
                   </li>
                 ))}
                 <li className="sidebar-menu-item active">
-                  <Link href="/agents" className="sidebar-link sidebar-link-all">
+                  <Link href="/categories" className="sidebar-link sidebar-link-all">
                     <span className="sidebar-icon" />
                     <span className="link-text">Смотреть все категории</span>
                   </Link>

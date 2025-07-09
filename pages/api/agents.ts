@@ -25,26 +25,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db.close();
       return res.status(200).json(agent);
     }
-    const pageParam = req.query.page as string | undefined;
-    const perPageParam = req.query.perPage as string | undefined;
-    if (pageParam || perPageParam) {
-      const page = parseInt(pageParam || '1');
-      const perPage = parseInt(perPageParam || '5');
-      const offset = (page - 1) * perPage;
-      const totalRow = await db.get('SELECT COUNT(*) as count FROM agents');
-      const rows = await db.all('SELECT * FROM agents LIMIT ? OFFSET ?', [perPage, offset]);
-      const agents = rows.map(mapAgent);
-      const pageCount = Math.ceil(totalRow.count / perPage);
-      console.log('API agents:', agents.length, agents);
-      await db.close();
-      return res.status(200).json({ total: totalRow.count, pageCount, agents });
-    } else {
-      const rows = await db.all('SELECT * FROM agents');
-      const agents = rows.map(mapAgent);
-      console.log('API agents:', agents.length, agents);
-      await db.close();
-      return res.status(200).json(agents);
-    }
+    const rows = await db.all('SELECT * FROM agents');
+    const agents = rows.map(mapAgent);
+    console.log('API agents:', agents.length, agents);
+    await db.close();
+    return res.status(200).json(agents);
   }
 
   if (req.method === 'POST') {
