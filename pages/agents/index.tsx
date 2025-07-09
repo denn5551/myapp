@@ -1,153 +1,61 @@
-// pages/agents/index.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Sidebar from '@/components/Sidebar';
-import HamburgerIcon from '@/components/HamburgerIcon';
-import CloseIcon from '@/components/CloseIcon';
 
 export default function AgentsPage() {
-  const [email, setEmail] = useState('');
-  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const pageTitle = 'Каталог ИИ-помощников';
-
-  useEffect(() => {
-    setSidebarOpen(window.innerWidth > 768);
-  }, []);
-
-
-  const [categories, setCategories] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(5);
+  const [pageCount, setPageCount] = useState(1);
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/categories').then((r) => r.json()),
-      fetch('/api/agents').then((r) => r.json()),
-    ])
-      .then(([cats, ags]) => {
-        setCategories(cats);
-        setAgents(ags);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/me', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.email) {
-          window.location.href = '/auth/login';
-        } else {
-          setEmail(data.email);
-          setSubscriptionStatus(data.subscriptionStatus || 'expired');
-          setLoading(false);
-        }
-      });
-  }, []);
-
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-  const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
-
-  const handleLogout = async () => {
-    try {
-      const res = await fetch('/api/logout', { credentials: 'include' });
-      if (res.ok) {
-        window.location.href = '/auth/login';
-      }
-    } catch (e) {
-      console.error('Ошибка при выходе:', e);
-    }
+  const loadAgents = async (p = page, pp = perPage) => {
+    const res = await fetch(`/api/agents?page=${p}&perPage=${pp}`);
+    const data = await res.json();
+    setAgents(data.agents);
+    setPageCount(data.pageCount);
   };
 
-  if (loading) {
-    return <div>Загрузка...</div>;
-  }
-
-  console.log('Agents for render:', agents);
+  useEffect(() => {
+    loadAgents();
+  }, [page, perPage]);
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        userEmail={email}
-        subscriptionStatus={subscriptionStatus}
-      />
-
-      <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
-        <header className="lk-header">
-          <button className="mobile-hamburger" onClick={toggleSidebar}>
-            {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
-          </button>
-          <h1 className="header__title">{pageTitle}</h1>
-          <div className="header__user" onClick={toggleUserMenu}>
-            <span className="user-avatar">
-              {email.charAt(0).toUpperCase()}
-            </span>
-            {userMenuOpen && (
-              <ul className="dropdown-menu">
-                <li>
-                  <Link href="/profile">Профиль</Link>
-                </li>
-                <li>
-                  <button onClick={handleLogout}>Выйти</button>
-                </li>
-              </ul>
-            )}
-          </div>
-        </header>
-        <div className="content-header">
-          <h1 className="section-title">Каталог ИИ-помощников</h1>
-
-          {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
-            <div className="access-warning">
-              <h3>🔓 Доступ ограничен</h3>
-              <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
-            </div>
-          )}
-        </div>
-
-        {categories.map(category => {
-          const categoryAgents = agents.filter(agent => agent.category_id === category.id);
-
-          return (
-            <section key={category.id} className="content-section">
-              <div className="category-header">
-                <h2 className="category-title">
-                  <Link href={`/categories/${category.name}`} className="category-link">
-                    {category.name}
-                  </Link>
-                </h2>
-              </div>
-
-              {categoryAgents.length === 0 ? (
-                <p>Нет агентов в этой категории.</p>
-              ) : (
-                <>
-                  <div className="agents-grid">
-                    {categoryAgents.map(agent => (
-                      <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
-                        <div className="agent-card">
-                          <h3 className="agent-title">{agent.name}</h3>
-                          <p className="agent-description">{agent.short_description}</p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-
-                  <div className="see-all-button-container">
-                    <Link href={`/categories/${category.name}`} className="see-all-button">
-                      Смотреть всех →
-                    </Link>
-                  </div>
-                </>
-              )}
-            </section>
-          );
-        })}
-      </main>
+    <div style={{ padding: '20px' }}>
+      <h1 className="text-2xl mb-4">Все агенты</h1>
+      <div className="flex items-center gap-2 mb-2">
+        <label>
+          Показывать по{' '}
+          <select
+            className="border px-2 py-1 rounded"
+            value={perPage}
+            onChange={(e) => { setPage(1); setPerPage(+e.target.value); }}
+          >
+            {[5,10,15,25].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        <button
+          className="px-2 py-1 border rounded"
+          disabled={page <= 1}
+          onClick={() => setPage(p => Math.max(1, p-1))}
+        >
+          ‹
+        </button>
+        <span>Страница {page} из {pageCount}</span>
+        <button
+          className="px-2 py-1 border rounded"
+          disabled={page >= pageCount}
+          onClick={() => setPage(p => Math.min(pageCount, p+1))}
+        >
+          ›
+        </button>
+      </div>
+      <ul className="space-y-2">
+        {agents.map(agent => (
+          <li key={agent.id} className="border p-2 rounded">
+            <Link href={`/agents/${agent.id}`}>{agent.name}</Link>
+            <p className="text-sm text-gray-600">{agent.short_description}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

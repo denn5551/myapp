@@ -15,13 +15,15 @@ beforeEach(() => {
   (openDb as jest.Mock).mockResolvedValue(mockDb);
   mockDb.run.mockReset();
   mockDb.get.mockReset();
+  mockDb.all.mockReset();
+  mockDb.all.mockResolvedValue([]);
   mockDb.close.mockReset();
 });
 
 describe('agents api update', () => {
   it('updates existing agent', async () => {
     mockDb.run.mockResolvedValue({ changes: 1 });
-    const updated = { id: '1', name: 'Agent' };
+    const updated = { id: '1', name: 'Agent', display_on_main: false };
     mockDb.get.mockResolvedValue(updated);
 
     const req = httpMocks.createRequest({ method: 'PUT', body: { id: '1', name: 'Agent' } });
