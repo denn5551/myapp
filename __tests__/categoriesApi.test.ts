@@ -23,6 +23,7 @@ describe('categories api', () => {
   it('paginates list', async () => {
     mockDb.get.mockResolvedValueOnce({ count: 7 });
     mockDb.all.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
+    mockDb.all.mockResolvedValue([]); // agents for each category
     const req = httpMocks.createRequest({ method: 'GET', query: { page: '2', perPage: '2' } });
     const res = httpMocks.createResponse();
 

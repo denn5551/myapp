@@ -10,13 +10,17 @@ export default function AdminCategoriesPage() {
   const loadCategories = async () => {
     const res = await fetch('/api/categories');
     const data = await res.json();
-    const list = Array.isArray(data.categories) ? data.categories : [];
+    const list = Array.isArray(data) ? data : [];
     setCategories(list);
   };
 
   useEffect(() => {
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    console.log('Admin categories:', categories);
+  }, [categories]);
 
   const addCategory = async (name: string) => {
     const res = await fetch('/api/categories', {
