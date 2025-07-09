@@ -9,7 +9,9 @@ export default function AdminCategoriesPage() {
 
   const loadCategories = async () => {
     const res = await fetch('/api/categories');
-    setCategories(await res.json());
+    const data = await res.json();
+    const list = Array.isArray(data.categories) ? data.categories : [];
+    setCategories(list);
   };
 
   useEffect(() => {

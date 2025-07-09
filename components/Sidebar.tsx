@@ -27,7 +27,10 @@ export default function Sidebar({
   useEffect(() => {
     fetch('/api/categories')
       .then((res) => res.json())
-      .then(setCategories)
+      .then((data) => {
+        const list = Array.isArray(data.categories) ? data.categories : [];
+        setCategories(list);
+      })
       .catch(() => {});
   }, []);
 
