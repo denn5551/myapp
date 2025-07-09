@@ -1025,11 +1025,17 @@ footer.site-footer {
           cursor: pointer;
         }
 
-        .agent-card:hover {
-          border-color: #3b82f6;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-          transform: translateY(-2px);
-        }
+.agent-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
 
         .agent-title {
           margin: 0 0 8px 0;
