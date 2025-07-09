@@ -1857,3 +1857,37 @@ footer.site-footer {
     display: block;
   }
 }
+
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.category-block {
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.category-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.agents-row {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.agents-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.agents-row::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
