@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
-import CategoryCard from '@/components/CategoryCard';
 import AgentCard from '@/components/AgentCard';
 import Pagination from '@/components/Pagination';
 
@@ -38,18 +37,20 @@ export default function AllCategories() {
     router.push(`/categories?page=1&perPage=${n}`);
   };
 
-  const slugify = (name: string) => encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
-
   return (
     <Layout>
       <h1 className="text-2xl font-bold mb-4">Категории</h1>
-      <div className="categories-grid">
+      <div className="categories-list">
         {categories.map(cat => (
-          <CategoryCard key={cat.id} href={`/categories/${slugify(cat.name)}`} {...cat}>
-            {Array.isArray(cat.agents) && cat.agents.slice(0, 4).map(agent => (
-              <AgentCard key={agent.id} {...agent} />
-            ))}
-          </CategoryCard>
+          <section key={cat.id} className="category-block">
+            <h2 className="category-title">{cat.name}</h2>
+            <div className="agents-row">
+              {Array.isArray(cat.agents) &&
+                cat.agents.map(agent => (
+                  <AgentCard key={agent.id} {...agent} />
+                ))}
+            </div>
+          </section>
         ))}
       </div>
       <Pagination
