@@ -45,12 +45,12 @@ const handleLogout = async () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/categories').then(r => r.json()),
+      fetch('/api/categories').then(r => r.json()).then(d => d.categories),
       fetch('/api/agents').then(r => r.json()),
     ])
       .then(([cats, ags]) => {
-        setCategories(cats);
-        setAgents(ags);
+        setCategories(Array.isArray(cats) ? cats : []);
+        setAgents(Array.isArray(ags) ? ags : []);
       })
       .catch(() => {});
   }, []);

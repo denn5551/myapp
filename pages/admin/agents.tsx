@@ -12,14 +12,16 @@ export default function AdminAgentsPage() {
   const [pageCount, setPageCount] = useState(1);
 
   const loadCategories = async () => {
-    const cats = await fetch('/api/categories').then((r) => r.json());
-    setCategories(cats);
+    const data = await fetch('/api/categories').then((r) => r.json());
+    const list = Array.isArray(data.categories) ? data.categories : [];
+    setCategories(list);
   };
 
   const loadAgents = async (p = page, pp = perPage) => {
     const res = await fetch(`/api/admin/agents?page=${p}&perPage=${pp}`);
     const data = await res.json();
-    setAgents(data.agents);
+    const list = Array.isArray(data.agents) ? data.agents : [];
+    setAgents(list);
     setPageCount(data.pageCount);
   };
 

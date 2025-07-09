@@ -24,7 +24,8 @@ export default function CategoriesPage() {
   const loadCategories = async (p = page, pp = perPage) => {
     const res = await fetch(`/api/categories?page=${p}&perPage=${pp}`);
     const data = await res.json();
-    setCategories(data.categories);
+    const list = Array.isArray(data.categories) ? data.categories : [];
+    setCategories(list);
     setPageCount(data.pageCount);
   };
 
@@ -35,7 +36,10 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetch('/api/agents')
       .then(res => res.json())
-      .then(setAgents)
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setAgents(list);
+      })
       .catch(() => {});
   }, []);
 
