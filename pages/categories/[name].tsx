@@ -4,6 +4,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
+import HamburgerIcon from '@/components/HamburgerIcon';
+import CloseIcon from '@/components/CloseIcon';
 
 export default function AgentPage() {
   const router = useRouter();
@@ -17,11 +19,6 @@ export default function AgentPage() {
     setSidebarOpen(window.innerWidth > 768);
   }, []);
 
-  useEffect(() => {
-    const handler = () => setSidebarOpen(prev => !prev);
-    document.addEventListener('toggleSidebar', handler);
-    return () => document.removeEventListener('toggleSidebar', handler);
-  }, []);
 
   const [categories, setCategories] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -29,7 +26,18 @@ export default function AgentPage() {
   const [categoryAgents, setCategoryAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-const toggleSidebar = () => { setSidebarOpen(prev => !prev);
+const toggleSidebar = () => { setSidebarOpen(prev => !prev); };
+const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
+
+const handleLogout = async () => {
+  try {
+    const res = await fetch('/api/logout', { credentials: 'include' });
+    if (res.ok) {
+      window.location.href = '/auth/login';
+    }
+  } catch (e) {
+    console.error('Ошибка при выходе:', e);
+  }
 };
 
   useEffect(() => {
@@ -88,6 +96,36 @@ const toggleSidebar = () => { setSidebarOpen(prev => !prev);
 />
 
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'} p-6`}>
+        <header className="lk-header">
+          <button className="mobile-hamburger" onClick={toggleSidebar}>
+            {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
+          <div className="lk-header__profile">
+            <button className="user-info-button" onClick={toggleUserMenu}>
+              <div className="lk-header__avatar">{email.charAt(0).toUpperCase()}</div>
+              <div className="user-details">
+                <div className="user-email">{email}</div>
+                <div className={`subscription-badge ${subscriptionStatus}`}>{
+                  subscriptionStatus === 'trial'
+                    ? 'Пробный период'
+                    : subscriptionStatus === 'active'
+                      ? 'Активна'
+                      : 'Истекла'
+                }</div>
+              </div>
+              <div className="chevron">{userMenuOpen ? '▲' : '▼'}</div>
+            </button>
+            {userMenuOpen && (
+              <div className="user-menu">
+                <Link href="/settings" className="user-menu-item">Настройки</Link>
+                <Link href="/profile" className="user-menu-item">Профиль</Link>
+                <Link href="/help" className="user-menu-item">Помощь</Link>
+                <hr className="user-menu-separator" />
+                <button onClick={handleLogout} className="user-menu-item">Выйти</button>
+              </div>
+            )}
+          </div>
+        </header>
         <h1 className="text-2xl font-bold mb-6">Агенты категории</h1>
 		
 		 {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (

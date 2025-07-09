@@ -19,7 +19,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isCategoriesOpen, setCategoriesOpen] = useState(true);
   const [isFavoritesOpen, setFavoritesOpen] = useState(true);
   const [isRecentOpen, setRecentOpen] = useState(true);
@@ -39,22 +38,7 @@ export default function Sidebar({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-	const toggleUserMenu = () => {
-	  setUserMenuOpen(prev => !prev);
-	};
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/logout', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        router.push('/auth/login');
-      }
-    } catch (error) {
-      console.error('Ошибка при выходе:', error);
-    }
-  };
 
   return (
     <>
@@ -168,49 +152,9 @@ export default function Sidebar({
           <Link href="/subscribe" className="subscribe-button">
             Оформить подписку
           </Link>
-
-          <div className="user-info">
-            <button className="user-info-button" onClick={toggleUserMenu}>
-              <div className="user-avatar sidebar__profile-avatar">
-                {userEmail.charAt(0).toUpperCase()}
-              </div>
-              <div className="user-details">
-                <div className="user-email">{userEmail}</div>
-                <div className={`subscription-badge ${subscriptionStatus}`}>
-                  {subscriptionStatus === 'trial'
-                    ? 'Пробный период'
-                    : subscriptionStatus === 'active'
-                      ? 'Активна'
-                      : 'Истекла'}
-                </div>
-              </div>
-              <div className="chevron">
-                {userMenuOpen ? '▲' : '▼'}
-              </div>
-            </button>
-
-            {userMenuOpen && (
-              <div className="user-menu">
-                <Link href="/settings" className="user-menu-item">
-                  Настройки
-                </Link>
-                <Link href="/profile" className="user-menu-item">
-                  Профиль
-                </Link>
-                <Link href="/help" className="user-menu-item">
-                  Помощь
-                </Link>
-                <hr className="user-menu-separator" />
-                <button onClick={handleLogout} className="user-menu-item">
-                  Выйти
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </aside>
     </>
   );
 }
- 
- 
+  

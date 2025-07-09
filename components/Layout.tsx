@@ -1,8 +1,6 @@
 // components/Layout.tsx
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import HamburgerIcon from './HamburgerIcon';
-import CloseIcon from './CloseIcon';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('expired');
@@ -13,26 +11,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       .then(data => setSubscriptionStatus(data.subscriptionStatus));
   }, []);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const handleHamburger = () => {
-    setSidebarOpen(prev => !prev);
-    document.dispatchEvent(new Event('toggleSidebar'));
-  };
 
   return (
     <>
-      <header className="site-header">
-        <button className="mobile-hamburger" onClick={handleHamburger}>
-          {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
-        </button>
-        <div className="site-logo">AI Tools</div>
-        <nav className="site-nav">
-          <Link href="/dashboard">Агенты</Link>
-          <Link href="/subscribe">Тарифы</Link>
-          <Link href="/auth/login">Вход</Link>
-        </nav>
-      </header>
+      {/* lk-header will be rendered on account pages */}
 
       {subscriptionStatus === 'trial' && (
         <div className="trial-banner">
