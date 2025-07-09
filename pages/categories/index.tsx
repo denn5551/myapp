@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import Layout from '@/components/Layout';
 import CategoryCard from '@/components/CategoryCard';
 import AgentCard from '@/components/AgentCard';
 import Pagination from '@/components/Pagination';
@@ -40,7 +41,7 @@ export default function AllCategories() {
   const slugify = (name: string) => encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
 
   return (
-    <div>
+    <Layout>
       <h1 className="text-2xl font-bold mb-4">Категории</h1>
       <div className="categories-grid">
         {categories.map(cat => (
@@ -58,6 +59,6 @@ export default function AllCategories() {
         onPageChange={goToPage}
         onPerPageChange={changePerPage}
       />
-    </div>
+    </Layout>
   );
 }
