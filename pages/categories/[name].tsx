@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import AgentCard from '@/components/AgentCard';
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -133,12 +134,7 @@ const handleLogout = async () => {
 
         <div className="agents-grid">
           {categoryAgents.map(agent => (
-            <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
-              <div className="agent-card">
-                <h4 className="agent-title">{agent.name}</h4>
-                <p className="agent-description">{agent.short_description}</p>
-              </div>
-            </Link>
+            <AgentCard key={agent.id} {...agent} />
           ))}
         </div>
       </main>
