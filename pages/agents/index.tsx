@@ -2,12 +2,21 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+import HamburgerIcon from '@/components/HamburgerIcon';
+import CloseIcon from '@/components/CloseIcon';
 
 export default function AgentsPage() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const pageTitle = 'Каталог ИИ-помощников';
+
+  useEffect(() => {
+    setSidebarOpen(window.innerWidth > 768);
+  }, []);
+
 
   const [categories, setCategories] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -39,6 +48,18 @@ export default function AgentsPage() {
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/logout', { credentials: 'include' });
+      if (res.ok) {
+        window.location.href = '/auth/login';
+      }
+    } catch (e) {
+      console.error('Ошибка при выходе:', e);
+    }
+  };
 
   if (loading) {
     return <div>Загрузка...</div>;
@@ -56,6 +77,27 @@ export default function AgentsPage() {
       />
 
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
+        <header className="lk-header">
+          <button className="mobile-hamburger" onClick={toggleSidebar}>
+            {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
+          </button>
+          <h1 className="header__title">{pageTitle}</h1>
+          <div className="header__user" onClick={toggleUserMenu}>
+            <span className="user-avatar">
+              {email.charAt(0).toUpperCase()}
+            </span>
+            {userMenuOpen && (
+              <ul className="dropdown-menu">
+                <li>
+                  <Link href="/profile">Профиль</Link>
+                </li>
+                <li>
+                  <button onClick={handleLogout}>Выйти</button>
+                </li>
+              </ul>
+            )}
+          </div>
+        </header>
         <div className="content-header">
           <h1 className="section-title">Каталог ИИ-помощников</h1>
 

@@ -12,6 +12,8 @@
   --card-border: #E5E7EB;
   --text-primary: #111827;
   --text-secondary: #6B7280;
+  --border-color: #e5e7eb;
+  --hover-bg: #f3f4f6;
 }
 
 * {
@@ -681,16 +683,6 @@ footer.site-footer {
   margin-top: 40px;
 }
 
-/* ✅ Плашка триала */
-.trial-banner {
-  background-color: #FEF3C7;
-  color: #92400E;
-  padding: 12px 20px;
-  font-size: 14px;
-  text-align: center;
-  border-top: 1px solid #FDE68A;
-  border-bottom: 1px solid #FDE68A;
-}
 
 .dashboard-layout {
           display: flex;
@@ -1060,8 +1052,11 @@ footer.site-footer {
 
         .sidebar-closed .sidebar-logo h2,
         .sidebar-closed .sidebar-section h4,
-        .sidebar-closed .sidebar-link,
         .sidebar-closed .subscribe-button {
+          display: none;
+        }
+
+        .sidebar-closed .sidebar-menu {
           display: none;
         }
 
@@ -1080,7 +1075,7 @@ footer.site-footer {
             transform: translateX(-100%);
           }
 
-          .sidebar-open {
+          .sidebar.open {
             transform: translateX(0);
           }
 
@@ -1089,7 +1084,7 @@ footer.site-footer {
             margin-left: 0;
           }
 
-          .sidebar-open ~ .main-content {
+          .sidebar.open ~ .main-content {
             margin-left: 0;
           }
         }
@@ -1610,8 +1605,11 @@ footer.site-footer {
         /* Responsive sidebar behavior */
         .sidebar-closed .sidebar-logo h2,
         .sidebar-closed .sidebar-section h4,
-        .sidebar-closed .sidebar-link,
         .sidebar-closed .subscribe-button {
+          display: none;
+        }
+
+        .sidebar-closed .sidebar-menu {
           display: none;
         }
 
@@ -1630,7 +1628,7 @@ footer.site-footer {
             transform: translateX(-100%);
           }
 
-          .sidebar-open {
+          .sidebar.open {
             transform: translateX(0);
           }
 
@@ -1691,4 +1689,165 @@ footer.site-footer {
   flex: 1;
   padding: 24px;
   overflow: auto;
+}
+
+/* Sidebar enhancements */
+.sidebar {
+  transition: width 0.2s;
+}
+.sidebar-link {
+  display: flex;
+  align-items: center;
+}
+.sidebar-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.link-text {
+  white-space: nowrap;
+}
+.accordion-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+.accordion-arrow {
+  margin-left: auto;
+  transition: transform 0.2s;
+  width: 16px;
+  height: 16px;
+}
+.accordion-arrow.open {
+  transform: rotate(90deg);
+}
+.sidebar-closed .link-text,
+.sidebar-closed .accordion-arrow {
+  display: none;
+}
+
+.mobile-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 12px;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-hamburger {
+    display: block;
+  }
+  .sidebar-overlay.show {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 99;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-hamburger {
+    display: none;
+  }
+}
+
+.sidebar__profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.lk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dropdown-menu li {
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dropdown-menu li:hover {
+  background: var(--hover-bg);
+}
+
+.header__user {
+  margin-left: auto;
+  position: relative;
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #ccc;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.header__title {
+  margin: 0 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .header__title {
+    display: none;
+  }
+  .section-title {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .section-title {
+    display: none;
+  }
+  .header__title {
+    display: block;
+  }
 }
