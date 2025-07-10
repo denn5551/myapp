@@ -93,12 +93,14 @@ export default function AllCategories() {
     }
   };
 
-  const catsWithAgents = categories.map(cat => ({
-    ...cat,
-    agents: Array.isArray(cat.agents) && cat.agents.length > 0
-      ? cat.agents
-      : allAgents.filter(a => a.category_id === cat.id)
-  }));
+  const firstIndex = (page - 1) * perPage;
+  const lastIndex = firstIndex + perPage;
+  const categoriesPageData = categories
+    .slice(firstIndex, lastIndex)
+    .map(cat => ({
+      ...cat,
+      agents: allAgents.filter(a => a.category_id === cat.id)
+    }));
 
   return (
     <div className="dashboard-layout">
@@ -140,7 +142,7 @@ export default function AllCategories() {
           />
 
           <section className="all-categories">
-            {catsWithAgents.map(cat => (
+            {categoriesPageData.map(cat => (
               <div key={cat.id} className="category-column">
                 <h2 className="category-title">{cat.name}</h2>
                 <div className="agents-grid">
