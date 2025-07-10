@@ -10,6 +10,7 @@ interface Agent {
   id: string;
   name: string;
   short_description: string;
+  category_id?: number;
 }
 
 interface CategoryWithAgents {
@@ -29,6 +30,7 @@ export default function AllCategories() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('trial');
   const [categories, setCategories] = useState<CategoryWithAgents[]>([]);
+  const [allAgents, setAllAgents] = useState<Agent[]>([]);
   const [pageCount, setPageCount] = useState(1);
 
   const toggleSidebar = () => setSidebarOpen(o => !o);
@@ -62,6 +64,17 @@ export default function AllCategories() {
       .catch(() => {});
   }, [page, perPage]);
 
+  // Load all agents for fallback mapping
+  useEffect(() => {
+    fetch('/api/agents')
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : Array.isArray(data.agents) ? data.agents : [];
+        setAllAgents(list);
+      })
+      .catch(() => {});
+  }, []);
+
   const goToPage = (p: number) => {
     router.push(`/categories?page=${p}&perPage=${perPage}`);
   };
@@ -80,6 +93,13 @@ export default function AllCategories() {
     }
   };
 
+  const catsWithAgents = categories.map(cat => ({
+    ...cat,
+    agents: Array.isArray(cat.agents) && cat.agents.length > 0
+      ? cat.agents
+      : allAgents.filter(a => a.category_id === cat.id)
+  }));
+
   return (
     <div className="dashboard-layout">
       <Sidebar
@@ -94,7 +114,7 @@ export default function AllCategories() {
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
-          <h1 className="section-title">Все категории</h1>
+          <h1 className="header__title">Все категории</h1>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">{email.charAt(0).toUpperCase()}</span>
             {userMenuOpen && (
@@ -111,22 +131,31 @@ export default function AllCategories() {
         </header>
 
         <div className="content-section categories-section">
-          <div className="categories-list">
-            {categories.map(cat => (
-              <section key={cat.id} className="category-block">
-                <h3 className="category-title">{cat.name}</h3>
-                <div className="agents-row">
-                  {cat.agents.slice(0, 4).map(agent => (
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            perPage={perPage}
+            onPageChange={goToPage}
+            onPerPageChange={changePerPage}
+          />
+
+          <section className="all-categories">
+            {catsWithAgents.map(cat => (
+              <div key={cat.id} className="category-column">
+                <h2 className="category-title">{cat.name}</h2>
+                <div className="agents-grid">
+                  {cat.agents.map(agent => (
                     <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
                       <div className="agent-card">
                         <h4 className="agent-title">{agent.name}</h4>
+                        <p className="agent-description">{agent.short_description}</p>
                       </div>
                     </Link>
                   ))}
                 </div>
-              </section>
+              </div>
             ))}
-          </div>
+          </section>
         </div>
 
         <Pagination
