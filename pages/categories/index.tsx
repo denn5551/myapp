@@ -95,7 +95,7 @@ export default function AllCategories() {
 
   const firstIndex = (page - 1) * perPage;
   const lastIndex = firstIndex + perPage;
-  const categoriesPageData = categories
+  const paginatedCategories = categories
     .slice(firstIndex, lastIndex)
     .map(cat => ({
       ...cat,
@@ -111,12 +111,11 @@ export default function AllCategories() {
         subscriptionStatus={subscriptionStatus}
       />
 
-      <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
+      <main className="main-content with-sidebar p-6">
         <header className="lk-header">
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
-          <h1 className="header__title">Все категории</h1>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">{email.charAt(0).toUpperCase()}</span>
             {userMenuOpen && (
@@ -132,7 +131,33 @@ export default function AllCategories() {
           </div>
         </header>
 
-        <div className="content-section categories-section">
+        <h1 className="section-title text-2xl font-bold mb-4">Все категории</h1>
+        {subscriptionStatus !== 'active' && (
+          <div className="access-warning">
+            <h3>🔓 Доступ ограничен</h3>
+            <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
+          </div>
+        )}
+
+        <section className="categories-grid">
+          {paginatedCategories.map(category => (
+            <div key={category.id} className="category-block">
+              <h2 className="text-xl font-semibold mb-2">{category.name}</h2>
+              <div className="agents-grid">
+                {category.agents.map(agent => (
+                  <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+                    <div className="agent-card">
+                      <h4 className="agent-title">{agent.name}</h4>
+                      <p className="agent-description">{agent.short_description}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <div className="pagination-controls">
           <Pagination
             page={page}
             pageCount={pageCount}
@@ -140,33 +165,7 @@ export default function AllCategories() {
             onPageChange={goToPage}
             onPerPageChange={changePerPage}
           />
-
-          <section className="all-categories">
-            {categoriesPageData.map(cat => (
-              <div key={cat.id} className="category-column">
-                <h2 className="category-title">{cat.name}</h2>
-                <div className="agents-grid">
-                  {cat.agents.map(agent => (
-                    <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
-                      <div className="agent-card">
-                        <h4 className="agent-title">{agent.name}</h4>
-                        <p className="agent-description">{agent.short_description}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
         </div>
-
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          perPage={perPage}
-          onPageChange={goToPage}
-          onPerPageChange={changePerPage}
-        />
       </main>
     </div>
   );
