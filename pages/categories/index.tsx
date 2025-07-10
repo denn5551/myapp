@@ -111,11 +111,12 @@ export default function AllCategories() {
         subscriptionStatus={subscriptionStatus}
       />
 
-      <main className="main-content with-sidebar p-6">
+      <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'} p-6`}>
         <header className="lk-header">
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
+          <h1 className="header__title">Все категории</h1>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">{email.charAt(0).toUpperCase()}</span>
             {userMenuOpen && (
