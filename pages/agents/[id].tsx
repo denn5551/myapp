@@ -229,10 +229,24 @@ export default function AgentChat() {
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   };
 
-  const handleClearChat = () => {
-    setMessages([]);
-    if (typeof id === 'string') {
-      localStorage.removeItem(`chat_${id}`);
+  const handleClearChat = async () => {
+    console.log('🗑️ Очистка чата: запрошено');
+    try {
+      const res = await fetch(`/api/agents/${id}/clear`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        console.log('🗑️ Чат очищен успешно');
+        setMessages([]);
+        if (typeof id === 'string') {
+          localStorage.removeItem(`chat_${id}`);
+        }
+      } else {
+        console.error('Ошибка при очистке чата:', res.status);
+      }
+    } catch (e) {
+      console.error('Ошибка при очистке чата:', e);
     }
   };
 
