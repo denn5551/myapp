@@ -1861,7 +1861,10 @@ footer.site-footer {
 .categories-list {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  padding-right: 1rem;
 }
 
 .category-block {
@@ -1872,7 +1875,7 @@ footer.site-footer {
 
 .category-title {
   margin-bottom: 0.5rem;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: bold;
 }
 
