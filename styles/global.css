@@ -1008,8 +1008,9 @@ footer.site-footer {
 
 .agents-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+  margin-top: 12px;
 }
 
         .agent-card-link {
@@ -1033,9 +1034,8 @@ footer.site-footer {
 
 .categories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  grid-template-columns: 1fr;
+  gap: 24px;
 }
 
         .agent-title {
