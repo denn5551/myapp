@@ -6,6 +6,7 @@ import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
+import HeartIcon from '@/components/HeartIcon';
 
 
 // Функция для форматирования текста с абзацами
@@ -105,6 +106,7 @@ export default function AgentChat() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     setSidebarOpen(window.innerWidth > 768);
@@ -227,6 +229,31 @@ export default function AgentChat() {
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   };
 
+  const handleClearChat = async () => {
+    console.log('🗑️ Очистка чата: запрошено');
+    try {
+      const res = await fetch(`/api/agents/${id}/clear`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        console.log('🗑️ Чат очищен успешно');
+        setMessages([]);
+        if (typeof id === 'string') {
+          localStorage.removeItem(`chat_${id}`);
+        }
+      } else {
+        console.error('Ошибка при очистке чата:', res.status);
+      }
+    } catch (e) {
+      console.error('Ошибка при очистке чата:', e);
+    }
+  };
+
+  const toggleFavorite = () => {
+    setIsFavorite(prev => !prev);
+  };
+
   return (
     <div className="chat-layout">
       {/* Sidebar */}
@@ -243,6 +270,17 @@ export default function AgentChat() {
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
+          <div className="header__title">
+            <h1>Чат с {assistantName}</h1>
+          </div>
+          <div className="header__actions">
+            <button className="btn-clear-chat" onClick={handleClearChat}>
+              Очистить чат
+            </button>
+            <button className="btn-favorite" onClick={toggleFavorite}>
+              <HeartIcon filled={isFavorite} />
+            </button>
+          </div>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">
               {email.charAt(0).toUpperCase()}
@@ -259,18 +297,6 @@ export default function AgentChat() {
             )}
           </div>
         </header>
-        <div className="chat-header">
-          <h1 className="chat-title">Чат с {assistantName}</h1>
-          <button
-            className="clear-chat-button"
-            onClick={() => {
-              setMessages([]);
-              localStorage.removeItem(`chat_${id}`);
-            }}
-          >
-            Очистить чат
-          </button>
-        </div>
 
         <div className="chat-container">
           <div className="chat-messages">
