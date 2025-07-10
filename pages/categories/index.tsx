@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Sidebar from '@/components/Sidebar';
@@ -22,8 +22,8 @@ interface CategoryWithAgents {
 
 export default function AllCategories() {
   const router = useRouter();
-  const page = parseInt((router.query.page as string) || '1');
-  const perPage = parseInt((router.query.perPage as string) || '5');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(5);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -31,10 +31,31 @@ export default function AllCategories() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('trial');
   const [categories, setCategories] = useState<CategoryWithAgents[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>([]);
-  const [pageCount, setPageCount] = useState(1);
 
   const toggleSidebar = () => setSidebarOpen(o => !o);
   const toggleUserMenu = () => setUserMenuOpen(o => !o);
+
+  // Initialize page and perPage from URL query
+  useEffect(() => {
+    if (router.isReady) {
+      setPage(Number(router.query.page) || 1);
+      setPerPage(Number(router.query.perPage) || 5);
+    }
+  }, [router.isReady]);
+
+  // Keep URL in sync with current pagination
+  useEffect(() => {
+    if (router.isReady) {
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...router.query, page, perPage },
+        },
+        undefined,
+        { shallow: true }
+      );
+    }
+  }, [router.isReady, page, perPage]);
 
   useEffect(() => {
     setSidebarOpen(window.innerWidth > 768);
@@ -54,15 +75,14 @@ export default function AllCategories() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/categories?page=${page}&perPage=${perPage}`)
+    fetch('/api/categories')
       .then(res => res.json())
       .then(data => {
-        const list = Array.isArray(data.categories) ? data.categories : [];
+        const list = Array.isArray(data) ? data : Array.isArray(data.categories) ? data.categories : [];
         setCategories(list);
-        setPageCount(data.pageCount || 1);
       })
       .catch(() => {});
-  }, [page, perPage]);
+  }, []);
 
   // Load all agents for fallback mapping
   useEffect(() => {
@@ -76,10 +96,11 @@ export default function AllCategories() {
   }, []);
 
   const goToPage = (p: number) => {
-    router.push(`/categories?page=${p}&perPage=${perPage}`);
+    setPage(p);
   };
   const changePerPage = (n: number) => {
-    router.push(`/categories?page=1&perPage=${n}`);
+    setPerPage(n);
+    setPage(1);
   };
 
   const handleLogout = async () => {
@@ -93,14 +114,21 @@ export default function AllCategories() {
     }
   };
 
-  const firstIndex = (page - 1) * perPage;
-  const lastIndex = firstIndex + perPage;
-  const paginatedCategories = categories
-    .slice(firstIndex, lastIndex)
-    .map(cat => ({
-      ...cat,
-      agents: allAgents.filter(a => a.category_id === cat.id)
-    }));
+  const categoriesWithAgents = useMemo(
+    () =>
+      categories.map(cat => ({
+        ...cat,
+        agents: allAgents.filter(a => a.category_id === cat.id),
+      })),
+    [categories, allAgents]
+  );
+
+  const totalPages = Math.ceil(categoriesWithAgents.length / perPage);
+
+  const paginatedCategories = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return categoriesWithAgents.slice(start, start + perPage);
+  }, [categoriesWithAgents, page, perPage]);
 
   return (
     <div className="dashboard-layout">
@@ -161,7 +189,7 @@ export default function AllCategories() {
         <div className="pagination-controls">
           <Pagination
             page={page}
-            pageCount={pageCount}
+            pageCount={totalPages}
             perPage={perPage}
             onPageChange={goToPage}
             onPerPageChange={changePerPage}
