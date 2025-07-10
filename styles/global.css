@@ -1006,11 +1006,12 @@ footer.site-footer {
           font-weight: 600;
         }
 
-        .agents-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
-        }
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
 
         .agent-card-link {
           text-decoration: none;
@@ -1033,8 +1034,8 @@ footer.site-footer {
 
 .categories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 24px;
 }
 
         .agent-title {
@@ -1868,9 +1869,10 @@ footer.site-footer {
 }
 
 .category-block {
-  padding: 1rem;
-  border: 1px solid var(--border-color);
+  background: #fff;
   border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .category-title {
@@ -1879,18 +1881,3 @@ footer.site-footer {
   font-weight: bold;
 }
 
-.agents-row {
-  display: flex;
-  overflow-x: auto;
-  gap: 1rem;
-  padding-bottom: 0.5rem;
-}
-
-.agents-row::-webkit-scrollbar {
-  height: 6px;
-}
-
-.agents-row::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
