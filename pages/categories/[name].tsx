@@ -62,32 +62,38 @@ const handleLogout = async () => {
       .catch(err => console.error('Fetch agents error:', err));
   }, []);
 
-  useEffect(() => {
-    if (!router.isReady || !agents.length || !categories.length) return;
+useEffect(() => {
+  if (!router.isReady) return;
 
-    const categoryName = Array.isArray(router.query.name)
-      ? router.query.name[0]
-      : router.query.name;
-    console.log('Current slug:', categoryName);
-    console.log('All categories:', categories);
-    console.log('All agents:', agents);
+  setLoading(true);
 
-  const nameLower = String(categoryName).toLowerCase();
+  const rawName = Array.isArray(router.query.name)
+    ? router.query.name[0]
+    : router.query.name;
+  const slugOrName = String(rawName || '').toLowerCase();
+
+  console.log('→ router.query.name:', router.query.name);
+  console.log('→ categories:', categories);
+  console.log('→ agents:', agents.length);
+
   const currentCategory = categories.find(
     cat =>
-      (cat.slug && cat.slug.toLowerCase() === nameLower) ||
-      (cat.name && cat.name.toLowerCase() === nameLower)
+      (cat.slug && cat.slug.toLowerCase() === slugOrName) ||
+      (cat.name && cat.name.toLowerCase() === slugOrName)
   );
-    console.log('Matched category object:', currentCategory);
 
-  const filtered = currentCategory
-    ? agents.filter(agent => agent.category_id === currentCategory.id)
-    : [];
-    console.log('Filtered agents for render:', filtered);
-
-    setCategoryAgents(filtered);
+  if (!currentCategory) {
+    setCategoryAgents([]);
+    console.log('→ filtered agents:', []);
     setLoading(false);
-  }, [router.isReady, agents, categories]);
+    return;
+  }
+
+  const filtered = agents.filter(a => a.category_id === currentCategory.id);
+  console.log('→ filtered agents:', filtered);
+  setCategoryAgents(filtered);
+  setLoading(false);
+}, [router.isReady, router.query.name, categories, agents]);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
