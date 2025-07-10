@@ -15,20 +15,32 @@ function mapAgent(row: any) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const db = await openDb();
-  const slug = req.query.slug as string;
-  if (req.method !== 'GET' || !slug) {
+  try {
+    const { slug } = req.query;
+    const decodedSlug = decodeURIComponent(String(slug || ''));
+    if (req.method !== 'GET' || !slug) {
+      return res.status(405).end();
+    }
+
+    const db = await openDb();
+    const name = decodedSlug.replace(/-/g, ' ');
+    const category = await db.get(
+      'SELECT id, name, description FROM agent_categories WHERE LOWER(name)=LOWER(?)',
+      name
+    );
+    if (!category) {
+      await db.close();
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    const rows = await db.all(
+      'SELECT * FROM agents WHERE category_id=? ORDER BY created_at DESC',
+      category.id
+    );
+    const agents = rows.map(mapAgent);
     await db.close();
-    return res.status(405).end();
+    return res.status(200).json({ category, agents });
+  } catch (error) {
+    console.error('API /api/categories/[slug] error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  const name = decodeURIComponent(slug).replace(/-/g, ' ');
-  const category = await db.get('SELECT id, name, description FROM agent_categories WHERE LOWER(name)=LOWER(?)', name);
-  if (!category) {
-    await db.close();
-    return res.status(404).json({ message: 'Category not found' });
-  }
-  const rows = await db.all('SELECT * FROM agents WHERE category_id=? ORDER BY created_at DESC', category.id);
-  const agents = rows.map(mapAgent);
-  await db.close();
-  return res.status(200).json({ category, agents });
 }

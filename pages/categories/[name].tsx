@@ -14,14 +14,22 @@ interface Category {
 }
 
 export async function getServerSideProps({ params }: { params: { name: string } }) {
-  const slug = params.name;
-  const base = process.env.API_URL || '';
-  const res = await fetch(`${base}/api/categories/${slug}`);
-  if (!res.ok) {
+  try {
+    const slug = params.name;
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${base}/api/categories/${encodeURIComponent(slug)}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        return { notFound: true };
+      }
+      throw new Error(`API error ${res.status}`);
+    }
+    const { category, agents } = await res.json();
+    return { props: { category, agents } };
+  } catch (error) {
+    console.error('getServerSideProps error:', error);
     return { notFound: true };
   }
-  const { category, agents } = await res.json();
-  return { props: { category, agents } };
 }
 
 export default function CategoryPage({ category, agents }: { category: Category; agents: Agent[] }) {
