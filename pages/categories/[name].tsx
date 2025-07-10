@@ -76,10 +76,14 @@ const handleLogout = async () => {
     console.log('All categories:', categories);
     console.log('All agents:', agents);
 
-    const currentCategory = categories.find(cat => cat.name === categoryName);
+  const currentCategory = categories.find(
+    cat => cat.slug.toLowerCase() === String(categoryName).toLowerCase()
+  );
     console.log('Matched category object:', currentCategory);
 
-    const filtered = agents.filter(agent => agent.category_id === currentCategory?.id);
+  const filtered = currentCategory
+    ? agents.filter(agent => agent.category_id === currentCategory.id)
+    : [];
     console.log('Filtered agents for render:', filtered);
 
     setCategoryAgents(filtered);
