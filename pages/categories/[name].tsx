@@ -1,4 +1,5 @@
 // pages/categories/[name].tsx
+// Restored display logic from k2jylv-codex branch
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
