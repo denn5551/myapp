@@ -26,10 +26,14 @@ export default function Sidebar({
 
   useEffect(() => {
     fetch('/api/categories')
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then(setCategories)
-      .catch(() => {});
+      .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    console.log('Sidebar categories:', categories);
+  }, [categories]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -79,14 +83,14 @@ export default function Sidebar({
               <ul className="sidebar-menu">
                 {categories.map(cat => (
                   <li key={cat.id} className="sidebar-menu-item">
-                    <Link href={`/categories/${cat.name}`} className="sidebar-link">
+                    <Link href={`/categories/${cat.slug}`} className="sidebar-link">
                       <span className="sidebar-icon" />
                       <span className="link-text">{cat.name}</span>
                     </Link>
                   </li>
                 ))}
                 <li className="sidebar-menu-item active">
-                  <Link href="/agents" className="sidebar-link sidebar-link-all">
+                  <Link href="/categories" className="sidebar-link sidebar-link-all">
                     <span className="sidebar-icon" />
                     <span className="link-text">Смотреть все категории</span>
                   </Link>

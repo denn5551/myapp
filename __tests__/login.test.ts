@@ -10,6 +10,8 @@ describe('login api', () => {
   it('sets email cookie on success', async () => {
     (open as jest.Mock).mockResolvedValue({
       get: jest.fn().mockResolvedValue({ id: 1, password: 'hash' }),
+      all: jest.fn().mockResolvedValue([]),
+      run: jest.fn(),
       close: jest.fn()
     });
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);

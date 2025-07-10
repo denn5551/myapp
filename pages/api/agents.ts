@@ -9,6 +9,7 @@ function mapAgent(row: any) {
     short_description: row.short_description,
     full_description: row.description,
     category_id: row.category_id,
+    display_on_main: !!row.display_on_main,
     created_at: row.created_at,
   };
 }
@@ -32,15 +33,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    const { id, name, short, full, categoryId, slug, isActive } = req.body;
+    const { id, name, short, full, categoryId, slug, isActive, displayOnMain } = req.body;
     if (!id || !name || !categoryId) {
       await db.close();
       return res.status(400).json({ message: 'Missing fields' });
     }
     try {
       await db.run(
-        `INSERT INTO agents (id, name, description, short_description, category_id, slug, is_active, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        `INSERT INTO agents (id, name, description, short_description, category_id, slug, is_active, display_on_main, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
         [
           id,
           name,
@@ -49,6 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           categoryId,
           slug || id,
           isActive ? 1 : 0,
+          displayOnMain ? 1 : 0,
         ]
       );
       const row = await db.get('SELECT * FROM agents WHERE id = ?', id);
@@ -80,12 +82,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       await db.run(
-        `UPDATE agents SET name=?, short_description=?, description=?, category_id=? WHERE id=?`,
+        `UPDATE agents SET name=?, short_description=?, description=?, category_id=?, display_on_main=? WHERE id=?`,
         [
           name ?? before.name,
           short ?? before.short_description,
           full ?? before.description,
           categoryId ?? before.category_id,
+          typeof req.body.displayOnMain === 'boolean' ? (req.body.displayOnMain ? 1 : 0) : before.display_on_main,
           id,
         ]
       );
