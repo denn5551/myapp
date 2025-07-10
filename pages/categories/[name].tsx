@@ -47,14 +47,14 @@ const handleLogout = async () => {
   useEffect(() => {
     Promise.all([
       fetch('/api/categories', { credentials: 'include' })
-        .then(r => {
-          console.log('Fetch /api/categories status:', r.status);
-          return r.json();
+        .then(res => {
+          console.log('[categories] status:', res.status);
+          return res.json();
         }),
       fetch('/api/agents', { credentials: 'include' })
-        .then(r => {
-          console.log('Fetch /api/agents status:', r.status);
-          return r.json();
+        .then(res => {
+          console.log('[agents] status:', res.status);
+          return res.json();
         }),
     ])
       .then(([cats, ags]) => {
@@ -63,7 +63,7 @@ const handleLogout = async () => {
         setCategories(cats);
         setAgents(ags);
       })
-      .catch(err => console.error('Error loading cats/agents:', err));
+      .catch(err => console.error('Fetch error:', err));
   }, []);
 
   useEffect(() => {
