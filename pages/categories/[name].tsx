@@ -46,26 +46,45 @@ const handleLogout = async () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/categories').then(r => r.json()),
-      fetch('/api/agents').then(r => r.json()),
+      fetch('/api/categories', { credentials: 'include' })
+        .then(r => {
+          console.log('Fetch /api/categories status:', r.status);
+          return r.json();
+        }),
+      fetch('/api/agents', { credentials: 'include' })
+        .then(r => {
+          console.log('Fetch /api/agents status:', r.status);
+          return r.json();
+        }),
     ])
       .then(([cats, ags]) => {
+        console.log('Loaded categories:', cats);
+        console.log('Loaded agents:', ags);
         setCategories(cats);
         setAgents(ags);
       })
-      .catch(() => {});
+      .catch(err => console.error('Error loading cats/agents:', err));
   }, []);
 
   useEffect(() => {
-    if (router.isReady && router.query.name && agents.length > 0 && categories.length > 0) {
-      const categoryName = Array.isArray(router.query.name) ? router.query.name[0] : router.query.name;
-      const currentCategory = categories.find(cat => cat.name === categoryName);
-      const categoryId = currentCategory?.id;
-      const filtered = agents.filter(agent => agent.category_id === categoryId);
-      setCategoryAgents(filtered);
-      setLoading(false);
-    }
-  }, [router.isReady, router.query.name, agents, categories]);
+    if (!router.isReady || !agents.length || !categories.length) return;
+
+    const categoryName = Array.isArray(router.query.name)
+      ? router.query.name[0]
+      : router.query.name;
+    console.log('Current slug:', categoryName);
+    console.log('All categories:', categories);
+    console.log('All agents:', agents);
+
+    const currentCategory = categories.find(cat => cat.name === categoryName);
+    console.log('Matched category object:', currentCategory);
+
+    const filtered = agents.filter(agent => agent.category_id === currentCategory?.id);
+    console.log('Filtered agents for render:', filtered);
+
+    setCategoryAgents(filtered);
+    setLoading(false);
+  }, [router.isReady, agents, categories]);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
