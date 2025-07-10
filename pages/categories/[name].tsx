@@ -45,25 +45,21 @@ const handleLogout = async () => {
 };
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/categories', { credentials: 'include' })
-        .then(res => {
-          console.log('[categories] status:', res.status);
-          return res.json();
-        }),
-      fetch('/api/agents', { credentials: 'include' })
-        .then(res => {
-          console.log('[agents] status:', res.status);
-          return res.json();
-        }),
-    ])
-      .then(([cats, ags]) => {
-        console.log('Loaded categories:', cats);
-        console.log('Loaded agents:', ags);
-        setCategories(cats);
-        setAgents(ags);
+    fetch('/api/categories', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        console.log('API /categories →', data);
+        setCategories(data);
       })
-      .catch(err => console.error('Fetch error:', err));
+      .catch(err => console.error('Fetch categories error:', err));
+
+    fetch('/api/agents', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        console.log('API /agents →', data);
+        setAgents(data);
+      })
+      .catch(err => console.error('Fetch agents error:', err));
   }, []);
 
   useEffect(() => {
@@ -76,8 +72,11 @@ const handleLogout = async () => {
     console.log('All categories:', categories);
     console.log('All agents:', agents);
 
+  const nameLower = String(categoryName).toLowerCase();
   const currentCategory = categories.find(
-    cat => cat.slug.toLowerCase() === String(categoryName).toLowerCase()
+    cat =>
+      (cat.slug && cat.slug.toLowerCase() === nameLower) ||
+      (cat.name && cat.name.toLowerCase() === nameLower)
   );
     console.log('Matched category object:', currentCategory);
 
