@@ -1,50 +1,48 @@
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import AgentCard from '@/components/AgentCard';
 
-export default function CategoryPage() {
-  const router = useRouter();
-  const slug = router.query.name as string;
-  const [category, setCategory] = useState<any>(null);
-  const [agents, setAgents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface Agent {
+  id: string;
+  name: string;
+  short_description: string;
+}
 
-  useEffect(() => {
-    if (!slug) return;
-    fetch(`/api/categories/${slug}`)
-      .then(res => res.json())
-      .then(data => {
-        setCategory(data.category);
-        setAgents(Array.isArray(data.agents) ? data.agents : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [slug]);
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 
-  if (loading) {
-    return (
-      <Layout>
-        <p>Загрузка…</p>
-      </Layout>
-    );
+export async function getServerSideProps({ params }: { params: { name: string } }) {
+  try {
+    const slug = params.name;
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${base}/api/categories/${encodeURIComponent(slug)}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        return { notFound: true };
+      }
+      throw new Error(`API error ${res.status}`);
+    }
+    const { category, agents } = await res.json();
+    return { props: { category, agents } };
+  } catch (error) {
+    console.error('getServerSideProps error:', error);
+    return { notFound: true };
   }
+}
 
-  if (!category) {
-    return (
-      <Layout>
-        <p>Категория не найдена</p>
-      </Layout>
-    );
-  }
-
+export default function CategoryPage({ category, agents }: { category: Category; agents: Agent[] }) {
+  console.log('Loaded agents for category:', agents);
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-4">{category.name}</h1>
+      <h1 className="section-title">{category.name}</h1>
       <div className="agents-grid">
-        {agents.map(agent => (
-          <AgentCard key={agent.id} {...agent} />
-        ))}
+        {agents.length > 0 ? (
+          agents.map(agent => <AgentCard key={agent.id} {...agent} />)
+        ) : (
+          <p>Нет агентов в этой категории.</p>
+        )}
       </div>
     </Layout>
   );
