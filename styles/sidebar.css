@@ -10,6 +10,14 @@
   margin-top: 0.25rem;
 }
 
-.sidebar-closed .recent-chats-section {
+.sidebar-closed .recent-chats-section .link-text {
   display: none;
+}
+
+.sidebar-closed .recent-chats-section .recent-chats-list {
+  display: none;
+}
+
+.sidebar-closed .recent-chats-section .accordion-arrow {
+  display: inline-block;
 }
