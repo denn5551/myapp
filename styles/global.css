@@ -1870,6 +1870,12 @@ footer.site-footer {
   cursor: pointer;
 }
 
+.chat-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 767px) {
   .header__title {
     display: none;

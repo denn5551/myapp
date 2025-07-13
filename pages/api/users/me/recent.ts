@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const limit = parseInt((req.query.limit as string) || '10')
   const db = await openDb()
   const rows = await db.all(
-    `SELECT ur.chat_id, ur.last_message_at, a.name, a.short_description
+    `SELECT ur.chat_id, ur.last_message_at, a.name AS title
        FROM user_recent_chats ur
        JOIN agents a ON a.id = ur.chat_id
       WHERE ur.user_id = ?
@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const nextCursor = rows.length === limit ? rows[rows.length - 1].last_message_at : null
   const chats = rows.map(r => ({
     chat_id: r.chat_id,
-    agent: { id: r.chat_id, name: r.name, short_description: r.short_description },
+    title: r.title,
     last_message_at: r.last_message_at
   }))
   return res.status(200).json({ chats, nextCursor })
