@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSession } from '@/lib/auth'
-import { openDb } from '@/lib/db'
+import { getSession } from '../../../../lib/auth'
+import { openDb } from '../../../../lib/db'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession(req)
@@ -18,5 +18,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     [user_id]
   )
   await db.close()
-  return res.status(200).json(favorites)
+  return res.status(200).json({ agents: favorites })
 }

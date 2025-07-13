@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import { useFavorites } from '@/hooks/useFavorites';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -24,7 +23,7 @@ export default function Sidebar({
   const [isFavoritesOpen, setFavoritesOpen] = useState(true);
   const [isRecentOpen, setRecentOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const { favorites } = useFavorites();
+  const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -32,6 +31,13 @@ export default function Sidebar({
       .then(setCategories)
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    fetch('/api/users/me/favorites', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setFavorites(data.agents || []))
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     console.log('Sidebar categories:', categories);
@@ -113,7 +119,7 @@ export default function Sidebar({
             </button>
             {isFavoritesOpen && (
               <ul className="sidebar-menu">
-                {favorites.map(a => (
+                {favorites.slice(0,5).map(a => (
                   <li key={a.id} className="sidebar-menu-item">
                     <Link href={`/agents/${a.id}`} className="sidebar-link">
                       <span className="link-text">{a.name}</span>
