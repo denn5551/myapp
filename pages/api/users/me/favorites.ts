@@ -13,8 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
        FROM agents a
        JOIN user_favorite_agents f ON f.agent_id = a.id
       WHERE f.user_id = ?
-      ORDER BY f.created_at DESC
-      LIMIT 5;`,
+      ORDER BY f.created_at DESC;`,
     [user_id]
   )
   await db.close()
