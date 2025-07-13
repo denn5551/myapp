@@ -6,7 +6,7 @@ import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
-import HeartIcon from '@/components/HeartIcon';
+import FavoriteButton from '@/components/FavoriteButton';
 
 
 // Функция для форматирования текста с абзацами
@@ -106,7 +106,6 @@ export default function AgentChat() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     setSidebarOpen(window.innerWidth > 768);
@@ -250,9 +249,6 @@ export default function AgentChat() {
     }
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite(prev => !prev);
-  };
 
   return (
     <div className="chat-layout">
@@ -277,9 +273,7 @@ export default function AgentChat() {
             <button className="btn-clear-chat" onClick={handleClearChat}>
               Очистить чат
             </button>
-            <button className="btn-favorite" onClick={toggleFavorite}>
-              <HeartIcon filled={isFavorite} />
-            </button>
+            {typeof id === 'string' && <FavoriteButton agentId={id} />}
           </div>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">

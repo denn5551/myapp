@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSession } from '@/lib/auth'
-import { openDb } from '@/lib/db'
+import { getSession } from '../../../../lib/auth'
+import { openDb } from '../../../../lib/db'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession(req)
@@ -11,11 +11,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'POST') {
     await db.run(
-      `INSERT OR IGNORE INTO user_favorite_agents(user_id, agent_id) VALUES(?,?);`,
+      `INSERT OR IGNORE INTO user_favorite_agents(user_id, agent_id) VALUES(?, ?);`,
       [user_id, agent_id]
     )
     await db.close()
-    return res.status(204).end()
+    return res.status(200).json({ success: true })
   }
   if (req.method === 'DELETE') {
     await db.run(
@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       [user_id, agent_id]
     )
     await db.close()
-    return res.status(204).end()
+    return res.status(200).json({ success: true })
   }
   await db.close()
   res.setHeader('Allow', ['POST','DELETE'])
