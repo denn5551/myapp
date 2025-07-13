@@ -184,10 +184,14 @@ export default function Sidebar({
               <span className="sidebar-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 6a6 6 0 106 6H12V6zm-7.5 6a7.5 7.5 0 1112.9 5.3l1.6 1.6a.75.75 0 11-1.06 1.06l-1.6-1.6A7.5 7.5 0 014.5 12z"/></svg>
               </span>
-              {sidebarOpen && <span className="link-text">Последние чаты</span>}
-              <span className={`accordion-arrow ${sidebarOpen && isRecentOpen ? 'open' : ''}`}>
-                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
-              </span>
+              {sidebarOpen && (
+                <>
+                  <span className="link-text">Последние чаты</span>
+                  <span className={`accordion-arrow ${isRecentOpen ? 'open' : ''}`}>
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
+                  </span>
+                </>
+              )}
             </button>
             {sidebarOpen && isRecentOpen && (
               <ul className="recent-chats-list" onScroll={handleScroll}>

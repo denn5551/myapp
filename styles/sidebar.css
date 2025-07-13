@@ -19,5 +19,5 @@
 }
 
 .sidebar-closed .recent-chats-section .accordion-arrow {
-  display: inline-block;
+  display: none;
 }
