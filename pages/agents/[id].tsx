@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef, ReactElement } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
 import Link from 'next/link';
 import React from 'react';
 
@@ -104,12 +105,14 @@ export default function AgentChat() {
   const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
-    setSidebarOpen(window.innerWidth > 768);
-  }, []);
+    if (router.isReady && typeof id === 'string') {
+      fetch(`/api/chats/${id}/touch`, { method: 'POST', credentials: 'include' })
+    }
+  }, [router.isReady, id])
 
   
   // Автоматический скролл к последнему сообщению
@@ -166,9 +169,6 @@ export default function AgentChat() {
     }
   }, [router.isReady, id]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   const toggleUserMenu = () => {
     setUserMenuOpen(!userMenuOpen);

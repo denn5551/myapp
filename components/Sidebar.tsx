@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import RecentChatsList from './RecentChatsList';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -19,11 +20,34 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
-  const [isCategoriesOpen, setCategoriesOpen] = useState(true);
-  const [isFavoritesOpen, setFavoritesOpen] = useState(true);
+  const [categoriesOpen, setCategoriesOpen] = useState<boolean>(true);
+  const [favoritesOpen, setFavoritesOpen] = useState<boolean>(true);
   const [isRecentOpen, setRecentOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [favorites, setFavorites] = useState<any[]>([]);
+
+  useEffect(() => {
+    const savedCats = localStorage.getItem('sidebarCategoriesOpen');
+    if (savedCats !== null) setCategoriesOpen(JSON.parse(savedCats));
+    const savedFavs = localStorage.getItem('sidebarFavoritesOpen');
+    if (savedFavs !== null) setFavoritesOpen(JSON.parse(savedFavs));
+  }, []);
+
+  const toggleCategories = () => {
+    setCategoriesOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebarCategoriesOpen', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleFavorites = () => {
+    setFavoritesOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebarFavoritesOpen', JSON.stringify(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetch('/api/categories')
@@ -38,6 +62,7 @@ export default function Sidebar({
       .then(data => setFavorites(data.agents || []))
       .catch(console.error)
   }, [])
+
 
   useEffect(() => {
     console.log('Sidebar categories:', categories);
@@ -78,16 +103,16 @@ export default function Sidebar({
           </div>
 
           <div className="sidebar-section">
-            <button className="accordion-trigger" onClick={() => setCategoriesOpen(!isCategoriesOpen)}>
+            <button className="accordion-trigger" onClick={toggleCategories}>
               <span className="sidebar-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/></svg>
               </span>
               <span className="link-text">Категории</span>
-              <span className={`accordion-arrow ${isCategoriesOpen ? 'open' : ''}`}>
+              <span className={`accordion-arrow ${categoriesOpen ? 'open' : ''}`}>
                 <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
               </span>
             </button>
-            {isCategoriesOpen && (
+            {categoriesOpen && (
               <ul className="sidebar-menu">
                 {categories.map(cat => (
                   <li key={cat.id} className="sidebar-menu-item">
@@ -108,16 +133,16 @@ export default function Sidebar({
           </div>
 
           <div className="sidebar-section">
-            <button className="accordion-trigger" onClick={() => setFavoritesOpen(!isFavoritesOpen)}>
+            <button className="accordion-trigger" onClick={toggleFavorites}>
               <span className="sidebar-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27l6.18 3.73-1.64-7.03L21 9.24l-7.19-.61L12 2 10.19 8.63 3 9.24l5.46 4.73L6.82 21z"/></svg>
               </span>
               <span className="link-text">Избранные чаты</span>
-              <span className={`accordion-arrow ${isFavoritesOpen ? 'open' : ''}`}>
+              <span className={`accordion-arrow ${favoritesOpen ? 'open' : ''}`}>
                 <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
               </span>
             </button>
-            {isFavoritesOpen && (
+            {favoritesOpen && (
               <ul className="sidebar-menu">
                 {favorites.slice(0,5).map(a => (
                   <li key={a.id} className="sidebar-menu-item">
@@ -135,30 +160,21 @@ export default function Sidebar({
             )}
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-section recent-chats-section">
             <button className="accordion-trigger" onClick={() => setRecentOpen(!isRecentOpen)}>
               <span className="sidebar-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 6a6 6 0 106 6H12V6zm-7.5 6a7.5 7.5 0 1112.9 5.3l1.6 1.6a.75.75 0 11-1.06 1.06l-1.6-1.6A7.5 7.5 0 014.5 12z"/></svg>
               </span>
-              <span className="link-text">Последние чаты</span>
-              <span className={`accordion-arrow ${isRecentOpen ? 'open' : ''}`}>
-                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
-              </span>
+              {sidebarOpen && (
+                <>
+                  <span className="link-text">Последние чаты</span>
+                  <span className={`accordion-arrow ${isRecentOpen ? 'open' : ''}`}>
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 6l4 4 4-4"/></svg>
+                  </span>
+                </>
+              )}
             </button>
-            {isRecentOpen && (
-              <ul className="sidebar-menu">
-                <li className="sidebar-menu-item">
-                  <Link href="#" className="sidebar-link">
-                    <span className="link-text">ИИ психолог</span>
-                  </Link>
-                </li>
-                <li className="sidebar-menu-item">
-                  <Link href="#" className="sidebar-link">
-                    <span className="link-text">Фитнес тренер</span>
-                  </Link>
-                </li>
-              </ul>
-            )}
+            {sidebarOpen && isRecentOpen && <RecentChatsList />}
           </div>
         </div>
 

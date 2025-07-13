@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState'
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Sidebar from '@/components/Sidebar';
@@ -25,14 +26,13 @@ export default function AllCategories() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(5);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('trial');
   const [categories, setCategories] = useState<CategoryWithAgents[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>([]);
 
-  const toggleSidebar = () => setSidebarOpen(o => !o);
   const toggleUserMenu = () => setUserMenuOpen(o => !o);
 
   // Initialize page and perPage from URL query
@@ -57,9 +57,6 @@ export default function AllCategories() {
     }
   }, [router.isReady, page, perPage]);
 
-  useEffect(() => {
-    setSidebarOpen(window.innerWidth > 768);
-  }, []);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
