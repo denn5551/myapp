@@ -31,8 +31,8 @@ test('touch inserts or updates', async () => {
 
 test('recent list returns nextCursor', async () => {
   mockDb.all.mockResolvedValueOnce([
-    { chat_id: 'c1', last_message_at: '2025-07-15', name: 'A', short_description: '' },
-    { chat_id: 'c2', last_message_at: '2025-07-14', name: 'B', short_description: '' }
+    { chat_id: 'c1', last_message_at: '2025-07-15', title: 'A' },
+    { chat_id: 'c2', last_message_at: '2025-07-14', title: 'B' }
   ])
   const req = httpMocks.createRequest({ method: 'GET', query: { limit: '2' } })
   const res = httpMocks.createResponse()
@@ -40,5 +40,6 @@ test('recent list returns nextCursor', async () => {
   expect(mockDb.all).toHaveBeenCalled()
   const data = res._getJSONData()
   expect(data.chats.length).toBe(2)
+  expect(data.chats[0].title).toBe('A')
   expect(data.nextCursor).toBe('2025-07-14')
 })

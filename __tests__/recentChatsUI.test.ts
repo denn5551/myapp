@@ -22,7 +22,7 @@ function SidebarMock() {
   }
 
   return React.createElement('ul', { className: 'recent-chats-list', onScroll: handleScroll },
-    chats.map(c => React.createElement('li', { key: c.chat_id }))
+    chats.map(c => React.createElement('a', { key: c.chat_id }))
   )
 }
 
@@ -42,18 +42,42 @@ test('touch endpoint called on chat open', async () => {
 
 test('sidebar loads more on scroll', async () => {
   const responses = [
-    { chats: [{ chat_id: 'a1', agent: { name: 'A' }, last_message_at: 't1' }], nextCursor: 't0' },
-    { chats: [{ chat_id: 'a2', agent: { name: 'B' }, last_message_at: 't0' }], nextCursor: null }
+    { chats: [{ chat_id: 'a1', title: 'A', last_message_at: 't1' }], nextCursor: 't0' },
+    { chats: [{ chat_id: 'a2', title: 'B', last_message_at: 't0' }], nextCursor: null }
   ]
   global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(responses.shift()) }))
   const { container } = render(React.createElement(SidebarMock))
   const list = container.querySelector('.recent-chats-list') as HTMLElement
-  await waitFor(() => expect(list.querySelectorAll('li').length).toBe(1))
+  await waitFor(() => expect(list.querySelectorAll('a').length).toBe(1))
   ;(fetch as jest.Mock).mockClear()
   Object.defineProperty(list, 'scrollTop', { value: 100, configurable: true })
   Object.defineProperty(list, 'clientHeight', { value: 0, configurable: true })
   Object.defineProperty(list, 'scrollHeight', { value: 100, configurable: true })
   fireEvent.scroll(list)
   expect(fetch).toHaveBeenCalled()
-  await waitFor(() => expect(list.querySelectorAll('li').length).toBe(2))
+  await waitFor(() => expect(list.querySelectorAll('a').length).toBe(2))
+})
+
+function CollapseMock() {
+  const [open, setOpen] = React.useState<boolean>(true)
+  const toggle = () => {
+    setOpen(prev => {
+      const next = !prev
+      localStorage.setItem('sidebarCategoriesOpen', JSON.stringify(next))
+      return next
+    })
+  }
+  React.useEffect(() => {
+    const saved = localStorage.getItem('sidebarCategoriesOpen')
+    if (saved !== null) setOpen(JSON.parse(saved))
+  }, [])
+  return React.createElement('button', { onClick: toggle, 'data-testid': 'toggle' }, open ? 'open' : 'closed')
+}
+
+test('sidebar collapse state persists', () => {
+  localStorage.setItem('sidebarCategoriesOpen', 'false')
+  const { getByTestId } = render(React.createElement(CollapseMock))
+  expect(getByTestId('toggle').textContent).toBe('closed')
+  fireEvent.click(getByTestId('toggle'))
+  expect(localStorage.getItem('sidebarCategoriesOpen')).toBe('true')
 })
