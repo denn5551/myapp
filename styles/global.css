@@ -1870,6 +1870,7 @@ footer.site-footer {
   cursor: pointer;
 }
 
+
 @media (max-width: 767px) {
   .header__title {
     display: none;
