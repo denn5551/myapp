@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import FavoriteButton from './FavoriteButton';
 
 interface Props {
   id: string;
@@ -14,6 +15,7 @@ export default function AgentCard({ id, name, short_description }: Props) {
         <Link href={`/agents/${id}`}>{name}</Link>
       </h4>
       <p className="agent-description">{short_description}</p>
+      <FavoriteButton agentId={id} />
     </div>
   );
 }
