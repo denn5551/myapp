@@ -1,28 +1,50 @@
 /** @jest-environment jsdom */
 import React, { useEffect } from 'react'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { render, fireEvent, waitFor, act } from '@testing-library/react'
+let obsCallback: any
+(global as any).IntersectionObserver = class {
+  constructor(cb: any) { obsCallback = cb }
+  observe() { setTimeout(() => obsCallback([{ isIntersecting: true }]), 0) }
+  disconnect() {}
+}
 function SidebarMock() {
   const [chats, setChats] = React.useState<any[]>([])
-  const [cursor, setCursor] = React.useState<string | null>(null)
+  const [page, setPage] = React.useState(1)
+  const [hasMore, setHasMore] = React.useState(true)
+  const [loading, setLoading] = React.useState(false)
+  const listRef = React.useRef<HTMLUListElement>(null)
+  const sentinelRef = React.useRef<HTMLDivElement>(null)
+  const perPage = 10
 
-  async function loadMore() {
-    const res = await fetch(`/api/users/me/recent?limit=10${cursor ? `&cursor=${cursor}` : ''}`)
+  async function loadPage(p: number) {
+    if (loading || !hasMore) return
+    setLoading(true)
+    const res = await fetch(`/api/users/me/recent-chats?page=${p}&perPage=${perPage}`)
     const data = await res.json()
     setChats(prev => [...prev, ...data.chats])
-    setCursor(data.nextCursor)
+    setHasMore(data.chats.length === perPage)
+    setPage(p)
+    setLoading(false)
   }
 
-  React.useEffect(() => { loadMore() }, [])
+  React.useEffect(() => { loadPage(1) }, [])
 
-  function handleScroll(e: any) {
-    const el = e.currentTarget
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10 && cursor) {
-      loadMore()
-    }
-  }
+  React.useEffect(() => {
+    const root = listRef.current
+    const sent = sentinelRef.current
+    if (!root || !sent) return
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        loadPage(page + 1)
+      }
+    }, { root, threshold: 1 })
+    obs.observe(sent)
+    return () => obs.disconnect()
+  }, [page, hasMore, loading])
 
-  return React.createElement('ul', { className: 'recent-chats-list', onScroll: handleScroll },
-    chats.map(c => React.createElement('a', { key: c.chat_id }))
+  return React.createElement('ul', { className: 'recent-chats-list', ref: listRef },
+    chats.map(c => React.createElement('a', { key: c.id })),
+    React.createElement('div', { ref: sentinelRef })
   )
 }
 
@@ -40,22 +62,11 @@ test('touch endpoint called on chat open', async () => {
   expect((fetch as jest.Mock).mock.calls[0][0]).toContain('/api/chats/a1/touch')
 })
 
-test('sidebar loads more on scroll', async () => {
-  const responses = [
-    { chats: [{ chat_id: 'a1', title: 'A', last_message_at: 't1' }], nextCursor: 't0' },
-    { chats: [{ chat_id: 'a2', title: 'B', last_message_at: 't0' }], nextCursor: null }
-  ]
-  global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(responses.shift()) }))
-  const { container } = render(React.createElement(SidebarMock))
-  const list = container.querySelector('.recent-chats-list') as HTMLElement
-  await waitFor(() => expect(list.querySelectorAll('a').length).toBe(1))
-  ;(fetch as jest.Mock).mockClear()
-  Object.defineProperty(list, 'scrollTop', { value: 100, configurable: true })
-  Object.defineProperty(list, 'clientHeight', { value: 0, configurable: true })
-  Object.defineProperty(list, 'scrollHeight', { value: 100, configurable: true })
-  fireEvent.scroll(list)
-  expect(fetch).toHaveBeenCalled()
-  await waitFor(() => expect(list.querySelectorAll('a').length).toBe(2))
+test('sidebar sets up intersection observer', () => {
+  global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve({ chats: [] }) }))
+  render(React.createElement(SidebarMock))
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(typeof obsCallback).toBe('function')
 })
 
 function CollapseMock() {

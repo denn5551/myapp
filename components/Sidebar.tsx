@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import RecentChatsList from './RecentChatsList';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -24,8 +25,6 @@ export default function Sidebar({
   const [isRecentOpen, setRecentOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [favorites, setFavorites] = useState<any[]>([]);
-  const [recentChats, setRecentChats] = useState<any[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
 
   useEffect(() => {
     const savedCats = localStorage.getItem('sidebarCategoriesOpen');
@@ -64,24 +63,6 @@ export default function Sidebar({
       .catch(console.error)
   }, [])
 
-  async function loadMore() {
-    const res = await fetch(
-      `/api/users/me/recent?limit=10${cursor ? `&cursor=${cursor}` : ''}`,
-      { credentials: 'include' }
-    )
-    const { chats, nextCursor } = await res.json()
-    setRecentChats(prev => [...prev, ...chats])
-    setCursor(nextCursor)
-  }
-
-  useEffect(() => { loadMore() }, [])
-
-  function handleScroll(e: React.UIEvent<HTMLUListElement>) {
-    const el = e.currentTarget
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10 && cursor) {
-      loadMore()
-    }
-  }
 
   useEffect(() => {
     console.log('Sidebar categories:', categories);
@@ -193,18 +174,7 @@ export default function Sidebar({
                 </>
               )}
             </button>
-            {sidebarOpen && isRecentOpen && (
-              <ul className="recent-chats-list" onScroll={handleScroll}>
-                {recentChats.map(chat => (
-                  <Link href={`/agents/${chat.chat_id}`} key={chat.chat_id}>
-                    <div className="recent-chat-item">
-                      <div className="chat-title">{chat.title}</div>
-                      <div className="chat-date">{chat.last_message_at}</div>
-                    </div>
-                  </Link>
-                ))}
-              </ul>
-            )}
+            {sidebarOpen && isRecentOpen && <RecentChatsList />}
           </div>
         </div>
 
