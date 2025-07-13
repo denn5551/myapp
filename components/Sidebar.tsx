@@ -24,6 +24,8 @@ export default function Sidebar({
   const [isRecentOpen, setRecentOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [recentChats, setRecentChats] = useState<any[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -38,6 +40,25 @@ export default function Sidebar({
       .then(data => setFavorites(data.agents || []))
       .catch(console.error)
   }, [])
+
+  async function loadMore() {
+    const res = await fetch(
+      `/api/users/me/recent?limit=10${cursor ? `&cursor=${cursor}` : ''}`,
+      { credentials: 'include' }
+    )
+    const { chats, nextCursor } = await res.json()
+    setRecentChats(prev => [...prev, ...chats])
+    setCursor(nextCursor)
+  }
+
+  useEffect(() => { loadMore() }, [])
+
+  function handleScroll(e: React.UIEvent<HTMLUListElement>) {
+    const el = e.currentTarget
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10 && cursor) {
+      loadMore()
+    }
+  }
 
   useEffect(() => {
     console.log('Sidebar categories:', categories);
@@ -146,17 +167,15 @@ export default function Sidebar({
               </span>
             </button>
             {isRecentOpen && (
-              <ul className="sidebar-menu">
-                <li className="sidebar-menu-item">
-                  <Link href="#" className="sidebar-link">
-                    <span className="link-text">ИИ психолог</span>
-                  </Link>
-                </li>
-                <li className="sidebar-menu-item">
-                  <Link href="#" className="sidebar-link">
-                    <span className="link-text">Фитнес тренер</span>
-                  </Link>
-                </li>
+              <ul className="recent-chats-list" onScroll={handleScroll}>
+                {recentChats.map(chat => (
+                  <li key={chat.chat_id} className="sidebar-menu-item">
+                    <Link href={`/agents/${chat.chat_id}`} className="sidebar-link recent-chat-item">
+                      <span className="agent-name">{chat.agent.name}</span>
+                      <time className="last-at">{chat.last_message_at}</time>
+                    </Link>
+                  </li>
+                ))}
               </ul>
             )}
           </div>

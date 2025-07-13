@@ -111,6 +111,12 @@ export default function AgentChat() {
     setSidebarOpen(window.innerWidth > 768);
   }, []);
 
+  useEffect(() => {
+    if (router.isReady && typeof id === 'string') {
+      fetch(`/api/chats/${id}/touch`, { method: 'POST', credentials: 'include' })
+    }
+  }, [router.isReady, id])
+
   
   // Автоматический скролл к последнему сообщению
   const scrollToBottom = () => {
