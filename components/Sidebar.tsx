@@ -179,7 +179,7 @@ export default function Sidebar({
             )}
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-section recent-chats-section">
             <button className="accordion-trigger" onClick={() => setRecentOpen(!isRecentOpen)}>
               <span className="sidebar-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 6a6 6 0 106 6H12V6zm-7.5 6a7.5 7.5 0 1112.9 5.3l1.6 1.6a.75.75 0 11-1.06 1.06l-1.6-1.6A7.5 7.5 0 014.5 12z"/></svg>
