@@ -23,6 +23,7 @@ export default function Sidebar({
   const [isFavoritesOpen, setFavoritesOpen] = useState(true);
   const [isRecentOpen, setRecentOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -30,6 +31,13 @@ export default function Sidebar({
       .then(setCategories)
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    fetch('/api/users/me/favorites', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setFavorites(data.agents || []))
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     console.log('Sidebar categories:', categories);
@@ -111,14 +119,16 @@ export default function Sidebar({
             </button>
             {isFavoritesOpen && (
               <ul className="sidebar-menu">
-                <li className="sidebar-menu-item">
-                  <Link href="#" className="sidebar-link">
-                    <span className="link-text">ИИ психолог</span>
-                  </Link>
-                </li>
-                <li className="sidebar-menu-item">
-                  <Link href="#" className="sidebar-link">
-                    <span className="link-text">Фитнес тренер</span>
+                {favorites.slice(0,5).map(a => (
+                  <li key={a.id} className="sidebar-menu-item">
+                    <Link href={`/agents/${a.id}`} className="sidebar-link">
+                      <span className="link-text">{a.name}</span>
+                    </Link>
+                  </li>
+                ))}
+                <li className="sidebar-menu-item active">
+                  <Link href="/favorites" className="sidebar-link sidebar-link-all">
+                    <span className="link-text">Смотреть все</span>
                   </Link>
                 </li>
               </ul>
