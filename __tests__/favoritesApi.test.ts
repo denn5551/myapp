@@ -31,7 +31,7 @@ test('POST adds favorite', async () => {
     `INSERT OR IGNORE INTO user_favorite_agents(user_id, agent_id) VALUES(?, ?);`,
     [1, 'a1']
   )
-  expect(res._getStatusCode()).toBe(200)
+  expect(res._getStatusCode()).toBe(204)
 })
 
 test('DELETE removes favorite', async () => {
@@ -44,7 +44,7 @@ test('DELETE removes favorite', async () => {
     `DELETE FROM user_favorite_agents WHERE user_id = ? AND agent_id = ?;`,
     [1, 'a1']
   )
-  expect(res._getStatusCode()).toBe(200)
+  expect(res._getStatusCode()).toBe(204)
 })
 
 test('GET returns favorites list', async () => {
