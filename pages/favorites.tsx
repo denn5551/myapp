@@ -4,6 +4,7 @@ import CloseIcon from '@/components/CloseIcon'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useSidebarState } from '@/hooks/useSidebarState'
 
 interface Agent {
   id: string
@@ -14,13 +15,12 @@ interface Agent {
 export default function FavoritesPage() {
   const [email, setEmail] = useState('')
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active'|'trial'|'expired'>('trial')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   const [favoriteAgents, setFavoriteAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { setSidebarOpen(window.innerWidth > 768) }, [])
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -45,7 +45,6 @@ export default function FavoritesPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
   const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen)
 
   const handleLogout = async () => {

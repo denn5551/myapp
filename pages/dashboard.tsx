@@ -1,6 +1,7 @@
 // pages/dashboard.tsx
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState'
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -18,13 +19,9 @@ interface Agent {
 export default function Dashboard() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [popularAgents, setPopularAgents] = useState<Agent[]>([]);
-
-  useEffect(() => {
-    setSidebarOpen(window.innerWidth > 768);
-  }, []);
 
 
   useEffect(() => {
@@ -47,9 +44,6 @@ export default function Dashboard() {
       .catch(() => {});
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   const toggleUserMenu = () => {
     setUserMenuOpen(!userMenuOpen);

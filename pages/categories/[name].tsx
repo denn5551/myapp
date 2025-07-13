@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState'
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -16,12 +17,8 @@ export default function AgentPage() {
 
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setSidebarOpen(window.innerWidth > 768);
-  }, []);
 
 
   const [categories, setCategories] = useState<any[]>([]);
@@ -30,7 +27,6 @@ export default function AgentPage() {
   const [categoryAgents, setCategoryAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-const toggleSidebar = () => { setSidebarOpen(prev => !prev); };
 const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
 
 const handleLogout = async () => {
