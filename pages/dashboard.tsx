@@ -5,6 +5,7 @@ import { useSidebarState } from '@/hooks/useSidebarState'
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
+import { WelcomePopup } from '@/components/WelcomePopup';
 
 
 interface Agent {
@@ -69,6 +70,8 @@ export default function Dashboard() {
   userEmail={email}
   subscriptionStatus={subscriptionStatus}
 />
+
+      <WelcomePopup />
 
       {/* Main Content */}
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
