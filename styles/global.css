@@ -1911,3 +1911,28 @@ footer.site-footer {
   font-weight: bold;
 }
 
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  width: 90%;
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    width: 60%;
+  }
+}
+
