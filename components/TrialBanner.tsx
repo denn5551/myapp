@@ -3,14 +3,13 @@ import { useUser } from '@/hooks/useUser';
 
 export function TrialBanner() {
   const { user, hasPlus } = useUser();
-  if (hasPlus || !user?.registeredAt) return null;
+  if (!user) return null;
 
-  const TRIAL_DAYS = 7;
-  const reg = new Date(user.registeredAt);
-  const diffMs = Date.now() - reg.getTime();
-  const daysSince = Math.floor(diffMs / 86400000);
-  const daysLeft = TRIAL_DAYS - daysSince;
-  if (daysLeft <= 0) return null;
+  if (hasPlus || user.status !== 'trial' || !user.subscriptionEndsAt) return null;
+  const end = new Date(user.subscriptionEndsAt);
+  const now = new Date();
+  if (now >= end) return null;
+  const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86400000);
 
   return (
     <div className="fixed top-0 inset-x-0 bg-yellow-100 border-b border-yellow-300 z-50">

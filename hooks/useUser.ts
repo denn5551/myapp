@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 export interface UserData {
   email: string;
   registeredAt: string;
-  subscriptionStatus: 'trial' | 'active' | 'expired';
+  status: 'trial' | 'active' | 'expired';
+  subscriptionEndsAt: string;
 }
 
 export function useUser() {
@@ -18,9 +19,10 @@ export function useUser() {
           setUser({
             email: data.email,
             registeredAt: data.registeredAt,
-            subscriptionStatus: data.subscriptionStatus,
+            status: data.status,
+            subscriptionEndsAt: data.subscriptionEndsAt,
           });
-          setHasPlus(data.subscriptionStatus === 'active');
+          setHasPlus(data.status === 'active');
         }
       })
       .catch(() => {});

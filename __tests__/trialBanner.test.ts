@@ -10,7 +10,12 @@ const mockedUseUser = useUser as jest.MockedFunction<typeof useUser>;
 describe('TrialBanner', () => {
   it('renders when in trial', () => {
     mockedUseUser.mockReturnValue({
-      user: { email: 'a', registeredAt: new Date().toISOString(), subscriptionStatus: 'trial' },
+      user: {
+        email: 'a',
+        registeredAt: new Date().toISOString(),
+        status: 'trial',
+        subscriptionEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+      },
       hasPlus: false,
     });
     const { container } = render(React.createElement(TrialBanner));
@@ -19,7 +24,12 @@ describe('TrialBanner', () => {
 
   it('hides when has plus', () => {
     mockedUseUser.mockReturnValue({
-      user: { email: 'a', registeredAt: new Date().toISOString(), subscriptionStatus: 'active' },
+      user: {
+        email: 'a',
+        registeredAt: new Date().toISOString(),
+        status: 'active',
+        subscriptionEndsAt: new Date().toISOString(),
+      },
       hasPlus: true,
     });
     const { container } = render(React.createElement(TrialBanner));
@@ -30,7 +40,12 @@ describe('TrialBanner', () => {
     const past = new Date();
     past.setDate(past.getDate() - 10);
     mockedUseUser.mockReturnValue({
-      user: { email: 'a', registeredAt: past.toISOString(), subscriptionStatus: 'trial' },
+      user: {
+        email: 'a',
+        registeredAt: past.toISOString(),
+        status: 'trial',
+        subscriptionEndsAt: past.toISOString(),
+      },
       hasPlus: false,
     });
     const { container } = render(React.createElement(TrialBanner));

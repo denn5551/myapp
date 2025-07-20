@@ -12,13 +12,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE,
     password TEXT,
-    created_at TEXT
+    created_at TEXT,
+    status TEXT DEFAULT 'trial',
+    subscription_ends_at TEXT
   )`);
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  const createdAt = new Date();
+  const subscriptionEndsAt = new Date(createdAt.getTime() + 7 * 86400000);
   try {
-    await db.run('INSERT INTO users (email, password, created_at) VALUES (?, ?, ?)',
-      [email, hashedPassword, new Date().toISOString()]);
+    await db.run(
+      'INSERT INTO users (email, password, created_at, status, subscription_ends_at) VALUES (?, ?, ?, ?, ?)',
+      [email, hashedPassword, createdAt.toISOString(), 'trial', subscriptionEndsAt.toISOString()]
+    );
     res.json({ message: 'Регистрация успешна' });
   } catch (e) {
     res.status(400).json({ message: 'Пользователь уже существует' });
