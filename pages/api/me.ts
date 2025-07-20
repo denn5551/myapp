@@ -24,7 +24,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (hasPaid) {
     status = 'active';
-  } else if (diffInDays < 3) {
+  } else if (diffInDays < 7) {
     status = 'trial';
   }
 
@@ -32,7 +32,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     email: decodedEmail,
     registeredAt: registered.toISOString(),
     subscriptionStatus: status,
-    trialEndsIn: 3 - diffInDays,
+    trialEndsIn: 7 - diffInDays,
     isAdmin: decodedEmail === 'kcc-kem@ya.ru'
   });
 }

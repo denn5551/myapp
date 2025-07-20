@@ -1,31 +1,31 @@
-// components/TrialBanner.tsx
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useUser } from '@/hooks/useUser';
 
-interface TrialBannerProps {
-  subscriptionStatus: 'trial' | 'active' | 'expired';
-}
+export function TrialBanner() {
+  const { user, hasPlus } = useUser();
+  if (hasPlus || !user?.registeredAt) return null;
 
-export default function TrialBanner({ subscriptionStatus }: TrialBannerProps) {
-  const router = useRouter();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const hiddenPaths = ['/subscribe', '/subscribe/success', '/admin'];
-    const shouldShow =
-      subscriptionStatus === 'trial' &&
-      !hiddenPaths.some(path => router.pathname.startsWith(path));
-    setVisible(shouldShow);
-  }, [router.pathname, subscriptionStatus]);
-
-  if (!visible) return null;
+  const TRIAL_DAYS = 7;
+  const reg = new Date(user.registeredAt);
+  const diffMs = Date.now() - reg.getTime();
+  const daysSince = Math.floor(diffMs / 86400000);
+  const daysLeft = TRIAL_DAYS - daysSince;
+  if (daysLeft <= 0) return null;
 
   return (
-    <div className="bg-yellow-100 text-yellow-800 px-4 py-2 text-sm text-center border-b border-yellow-300 z-50 fixed top-0 left-0 w-full">
-      🧪 Пробный период. Чтобы пользоваться всеми ИИ-помощниками без ограничений,{' '}
-      <a href="/subscribe" className="underline font-medium hover:text-yellow-900 ml-1">
-        оформите подписку
-      </a>
+    <div className="fixed top-0 inset-x-0 bg-yellow-100 border-b border-yellow-300 z-50">
+      <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between px-4 py-3">
+        <div className="text-sm text-yellow-900">
+          Осталось <span className="font-semibold">{daysLeft}</span>{' '}
+          {daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}.{' '}
+          Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.
+        </div>
+        <Link href="/subscribe">
+          <a className="mt-2 md:mt-0 inline-block px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+            Оформить
+          </a>
+        </Link>
+      </div>
     </div>
   );
 }

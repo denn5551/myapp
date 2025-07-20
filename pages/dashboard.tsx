@@ -97,12 +97,6 @@ export default function Dashboard() {
         </header>
         <div className="content-header">
           <h2>Добро пожаловать!</h2>
-          {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
-            <div className="access-warning">
-              <h3>🔓 Доступ ограничен</h3>
-              <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
-            </div>
-          )}
           
           <Link href="/reset" className="reset-button">
             🔁 Сбросить подписку

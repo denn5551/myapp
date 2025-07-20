@@ -146,13 +146,6 @@ useEffect(() => {
           </div>
         </header>
         <h1 className="section-title text-2xl font-bold mb-6">{categoryTitle}</h1>
-		
-		 {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
-            <div className="access-warning">
-              <h3>🔓 Доступ ограничен</h3>
-              <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
-            </div>
-          )}
 
         {categoryAgents.length === 0 && <p>Нет агентов в этой категории.</p>}
 

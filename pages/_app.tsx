@@ -4,6 +4,7 @@ import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import AdminLayout from '@/components/AdminLayout';
+import { TrialBanner } from '@/components/TrialBanner';
 import '@/styles/global.css';
 import '@/styles/sidebar.css';
 
@@ -16,6 +17,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   if (isAdminPage) {
     return (
       <AdminLayout>
+        <TrialBanner />
         <Component {...pageProps} />
       </AdminLayout>
     );
@@ -23,6 +25,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   
   return (
     <Layout>
+      <TrialBanner />
       <Component {...pageProps} />
     </Layout>
   );
