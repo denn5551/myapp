@@ -12,11 +12,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db.close();
       return res.status(404).json({ message: 'User not found' });
     }
+    const ends = subscriptionEndsAt ? subscriptionEndsAt : null;
     await db.run(
       'UPDATE users SET status = ?, subscription_ends_at = ? WHERE id = ?',
-      [status ?? current.status, subscriptionEndsAt ?? current.subscription_ends_at, id]
+      [status ?? current.status, ends, id]
     );
-    const row = await db.get('SELECT id, email, created_at, status, subscription_ends_at FROM users WHERE id = ?', id);
+    const row = await db.get(
+      'SELECT id, email, created_at, status, subscription_ends_at FROM users WHERE id = ?',
+      id
+    );
     await db.close();
     return res.status(200).json(row);
   }
