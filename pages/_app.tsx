@@ -14,7 +14,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   // Проверяем, находимся ли мы ТОЛЬКО на админских страницах (исключаем dashboard)
   const isAdminPage = router.pathname.startsWith('/admin');
   
-  const content = isAdminPage ? (
+  const inner = isAdminPage ? (
     <AdminLayout>
       <Component {...pageProps} />
     </AdminLayout>
@@ -27,7 +27,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <TrialBanner />
-      {isAdminPage ? content : <div className="pt-12">{content}</div>}
+      <div className={isAdminPage ? '' : 'pt-12'}>{inner}</div>
     </>
   );
 }
