@@ -18,6 +18,7 @@ beforeEach(() => {
 describe('me api', () => {
   it('returns user info when email cookie present', async () => {
     mockDb.get.mockResolvedValue({
+      id: 1,
       email: 'test@example.com',
       created_at: new Date().toISOString(),
       status: 'active',
@@ -37,5 +38,6 @@ describe('me api', () => {
     const data = res._getJSONData();
     expect(data.email).toBe('test@example.com');
     expect(data.status).toBe('active');
+    expect(data.hasPlus).toBe(true);
   });
 });

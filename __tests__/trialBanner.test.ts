@@ -11,6 +11,7 @@ describe('TrialBanner', () => {
   it('renders when in trial', () => {
     mockedUseUser.mockReturnValue({
       user: {
+        id: 1,
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
@@ -25,6 +26,7 @@ describe('TrialBanner', () => {
   it('hides when has plus', () => {
     mockedUseUser.mockReturnValue({
       user: {
+        id: 1,
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'active',
@@ -41,6 +43,7 @@ describe('TrialBanner', () => {
     past.setDate(past.getDate() - 10);
     mockedUseUser.mockReturnValue({
       user: {
+        id: 1,
         email: 'a',
         registeredAt: past.toISOString(),
         status: 'trial',

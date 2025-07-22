@@ -5,7 +5,7 @@ export function TrialBanner() {
   const { user, hasPlus } = useUser();
   if (!user) return null;
 
-  console.log({ status: user.status, subscriptionEndsAt: user.subscriptionEndsAt, hasPlus });
+  console.log({ user, hasPlus });
 
   if (hasPlus || user.status !== 'trial' || !user.subscriptionEndsAt) return null;
   const end = new Date(user.subscriptionEndsAt);

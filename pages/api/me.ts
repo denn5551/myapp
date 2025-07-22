@@ -11,13 +11,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cookies = req.headers.cookie || '';
   const emailCookie = cookies.split(';').find(c => c.trim().startsWith('email='));
   const decodedEmail = emailCookie ? decodeURIComponent(emailCookie.split('=')[1]) : null;
+  const paidCookie = cookies.split(';').find(c => c.trim().startsWith('subscriptionPaid='));
   if (!decodedEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
   const db = await openDb();
   const user = await db.get(
-    'SELECT email, created_at, status, subscription_ends_at as subscriptionEndsAt FROM users WHERE email = ?',
+    'SELECT id, email, created_at, status, subscription_ends_at as subscriptionEndsAt FROM users WHERE email = ?',
     decodedEmail
   );
   await db.close();
@@ -26,13 +27,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ error: 'User not found' });
   }
 
+  const hasPlus = !!paidCookie || user.status === 'active';
+
   res.status(200).json({
+    id: user.id,
     email: user.email,
     registeredAt: user.created_at,
     status: user.status,
     subscriptionEndsAt: user.subscriptionEndsAt
       ? new Date(user.subscriptionEndsAt).toISOString()
       : null,
+    hasPlus,
     isAdmin: decodedEmail === 'kcc-kem@ya.ru',
   });
 }
