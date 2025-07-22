@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const db = await openDb();
   const user = await db.get(
-    'SELECT email, created_at, status, subscription_ends_at FROM users WHERE email = ?',
+    'SELECT email, created_at, status, subscription_ends_at as subscriptionEndsAt FROM users WHERE email = ?',
     decodedEmail
   );
   await db.close();
@@ -30,7 +30,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     email: user.email,
     registeredAt: user.created_at,
     status: user.status,
-    subscriptionEndsAt: user.subscription_ends_at,
-    isAdmin: decodedEmail === 'kcc-kem@ya.ru'
+    subscriptionEndsAt: user.subscriptionEndsAt
+      ? new Date(user.subscriptionEndsAt).toISOString()
+      : null,
+    isAdmin: decodedEmail === 'kcc-kem@ya.ru',
   });
 }

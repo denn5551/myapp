@@ -18,11 +18,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       [status ?? current.status, ends, id]
     );
     const row = await db.get(
-      'SELECT id, email, created_at, status, subscription_ends_at FROM users WHERE id = ?',
+      'SELECT id, email, created_at, status, subscription_ends_at as subscriptionEndsAt FROM users WHERE id = ?',
       id
     );
     await db.close();
-    return res.status(200).json(row);
+    return res.status(200).json({
+      ...row,
+      subscriptionEndsAt: row.subscriptionEndsAt
+        ? new Date(row.subscriptionEndsAt).toISOString()
+        : null,
+    });
   }
 
   await db.close();

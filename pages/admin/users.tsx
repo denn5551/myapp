@@ -8,7 +8,7 @@ interface User {
   email: string;
   created_at: string;
   status: 'trial' | 'active' | 'expired';
-  subscription_ends_at: string | null;
+  subscriptionEndsAt: string | null;
 }
 
 export default function AdminUsersPage() {
@@ -72,7 +72,7 @@ export default function AdminUsersPage() {
                     handleFieldChange(
                       user.id,
                       e.target.value as User['status'],
-                      user.subscription_ends_at
+                      user.subscriptionEndsAt
                     )
                   }
                 >
@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
                 <input
                   type="date"
                   className="border rounded px-2 py-1 text-sm"
-                  value={user.subscription_ends_at ? user.subscription_ends_at.split('T')[0] : ''}
+                  value={user.subscriptionEndsAt ? user.subscriptionEndsAt.split('T')[0] : ''}
                   onChange={e =>
                     handleFieldChange(
                       user.id,

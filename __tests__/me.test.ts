@@ -21,7 +21,7 @@ describe('me api', () => {
       email: 'test@example.com',
       created_at: new Date().toISOString(),
       status: 'active',
-      subscription_ends_at: new Date().toISOString(),
+      subscriptionEndsAt: new Date().toISOString(),
     });
     const req = httpMocks.createRequest({
       method: 'GET',

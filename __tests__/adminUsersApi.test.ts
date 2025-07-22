@@ -27,7 +27,7 @@ describe('admin users api patch', () => {
       email: 'a@example.com',
       created_at: '2025-07-20',
       status: 'active',
-      subscription_ends_at: '2025-07-30',
+      subscriptionEndsAt: '2025-07-30',
     });
     const req = httpMocks.createRequest({
       method: 'PATCH',

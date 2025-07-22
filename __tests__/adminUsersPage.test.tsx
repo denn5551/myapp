@@ -8,7 +8,7 @@ const initialUser = {
   email: 'a@example.com',
   created_at: '2025-07-20',
   status: 'trial' as const,
-  subscription_ends_at: '2025-07-27',
+  subscriptionEndsAt: '2025-07-27',
 };
 
 describe('AdminUsersPage', () => {
@@ -37,7 +37,7 @@ describe('AdminUsersPage', () => {
         expect.objectContaining({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'active', subscriptionEndsAt: initialUser.subscription_ends_at }),
+          body: JSON.stringify({ status: 'active', subscriptionEndsAt: initialUser.subscriptionEndsAt }),
         })
       );
     });
