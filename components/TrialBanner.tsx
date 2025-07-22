@@ -9,9 +9,7 @@ export function TrialBanner() {
   const router = useRouter();
   const { user, hasPlus } = useUser();
 
-  console.log('TrialBanner mount:', {
-    mounted,
-    pathname: router.pathname,
+  console.log({
     status: user?.status,
     subscriptionEndsAt: user?.subscriptionEndsAt,
     hasPlus,
