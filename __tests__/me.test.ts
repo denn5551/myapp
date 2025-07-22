@@ -40,4 +40,26 @@ describe('me api', () => {
     expect(data.status).toBe('active');
     expect(data.hasPlus).toBe(true);
   });
+
+  it('computes subscriptionEndsAt when missing', async () => {
+    const createdAt = new Date('2025-07-20T00:00:00.000Z').toISOString();
+    mockDb.get.mockResolvedValue({
+      id: 2,
+      email: 'trial@example.com',
+      created_at: createdAt,
+      status: 'trial',
+      subscriptionEndsAt: null,
+    });
+    const req = httpMocks.createRequest({
+      method: 'GET',
+      headers: { cookie: 'email=trial%40example.com' },
+    });
+    const res = httpMocks.createResponse();
+
+    await handler(req, res);
+
+    const expected = new Date(new Date(createdAt).getTime() + 7 * 86400000).toISOString();
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData().subscriptionEndsAt).toBe(expected);
+  });
 });

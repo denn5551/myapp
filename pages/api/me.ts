@@ -29,14 +29,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const hasPlus = !!paidCookie || user.status === 'active';
 
+  let subscriptionEndsAt: string | null = user.subscriptionEndsAt;
+  if (!subscriptionEndsAt && user.status === 'trial') {
+    const base = new Date(user.created_at).getTime();
+    subscriptionEndsAt = new Date(base + 7 * 86400000).toISOString();
+  } else if (subscriptionEndsAt) {
+    subscriptionEndsAt = new Date(subscriptionEndsAt).toISOString();
+  } else {
+    subscriptionEndsAt = null;
+  }
+
   res.status(200).json({
     id: user.id,
     email: user.email,
     registeredAt: user.created_at,
     status: user.status,
-    subscriptionEndsAt: user.subscriptionEndsAt
-      ? new Date(user.subscriptionEndsAt).toISOString()
-      : null,
+    subscriptionEndsAt,
     hasPlus,
     isAdmin: decodedEmail === 'kcc-kem@ya.ru',
   });

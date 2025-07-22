@@ -9,6 +9,14 @@ export function TrialBanner() {
   const router = useRouter();
   const { user, hasPlus } = useUser();
 
+  console.log('TrialBanner mount:', {
+    mounted,
+    pathname: router.pathname,
+    status: user?.status,
+    subscriptionEndsAt: user?.subscriptionEndsAt,
+    hasPlus,
+  });
+
   useEffect(() => {
     setMounted(true);
   }, []);
