@@ -10,6 +10,16 @@ export function TrialBanner() {
   const { user, hasPlus } = useUser();
 
   useEffect(() => {
+    if (user) {
+      console.log('TrialBanner info:', {
+        status: user.status,
+        subscriptionEndsAt: user.subscriptionEndsAt,
+        hasPlus,
+      });
+    }
+  }, [user, hasPlus]);
+
+  useEffect(() => {
     setMounted(true);
   }, []);
 
