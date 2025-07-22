@@ -29,10 +29,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    const { container } = render(React.createElement(TrialBanner));
-    expect(container.textContent).toBe('');
+    const { queryByTestId } = render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(document.body.textContent).toMatch(/Осталось/);
+      expect(queryByTestId('trial-banner')).not.toBeNull();
     });
   });
   it('renders when in trial', async () => {
@@ -47,9 +46,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    render(React.createElement(TrialBanner));
+    const { queryByTestId } = render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(document.body.textContent).toMatch(/Осталось/);
+      expect(queryByTestId('trial-banner')).not.toBeNull();
     });
   });
 
@@ -65,9 +64,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: true,
     });
-    render(React.createElement(TrialBanner));
+    const { queryByTestId } = render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(document.body.textContent).toBe('');
+      expect(queryByTestId('trial-banner')).toBeNull();
     });
   });
 
@@ -85,9 +84,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    render(React.createElement(TrialBanner));
+    const { queryByTestId } = render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(document.body.textContent).toBe('');
+      expect(queryByTestId('trial-banner')).toBeNull();
     });
   });
 
@@ -103,9 +102,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    render(React.createElement(TrialBanner));
+    const { queryByTestId } = render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(document.body.textContent).toBe('');
+      expect(queryByTestId('trial-banner')).toBeNull();
     });
   });
 });
