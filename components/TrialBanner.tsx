@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { createPortal } from 'react-dom';
 import { useUser } from '@/hooks/useUser';
 
 export function TrialBanner() {
@@ -19,8 +20,8 @@ export function TrialBanner() {
   if (now >= end) return null;
   const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86400000);
 
-  return (
-    <div className="fixed top-0 inset-x-0 bg-yellow-100 border-b border-yellow-300 z-[1000]">
+  const banner = (
+    <div className="fixed top-0 inset-x-0 bg-yellow-100 border-b border-yellow-300 z-[9999]">
       <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between px-4 py-3">
         <div className="text-sm text-yellow-900">
           Осталось <span className="font-semibold">{daysLeft}</span>{' '}
@@ -36,4 +37,6 @@ export function TrialBanner() {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(banner, document.body) : null;
 }

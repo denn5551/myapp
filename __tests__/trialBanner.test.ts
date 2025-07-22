@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, cleanup } from '@testing-library/react';
 import { TrialBanner } from '../components/TrialBanner';
 import { useUser } from '../hooks/useUser';
 import { useRouter } from 'next/router';
@@ -13,6 +13,10 @@ jest.mock('next/router', () => ({
 const mockedUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
 
 describe('TrialBanner', () => {
+  afterEach(() => {
+    cleanup();
+    jest.clearAllMocks();
+  });
   it('renders when in trial', () => {
     mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
     mockedUseUser.mockReturnValue({
@@ -21,12 +25,12 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+        subscriptionEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
       },
       hasPlus: false,
     });
-    const { container } = render(React.createElement(TrialBanner));
-    expect(container.textContent).toMatch(/Осталось/);
+    render(React.createElement(TrialBanner));
+    expect(document.body.textContent).toMatch(/Осталось/);
   });
 
   it('hides when has plus', () => {
@@ -41,8 +45,8 @@ describe('TrialBanner', () => {
       },
       hasPlus: true,
     });
-    const { container } = render(React.createElement(TrialBanner));
-    expect(container.firstChild).toBeNull();
+    render(React.createElement(TrialBanner));
+    expect(document.body.textContent).toBe('');
   });
 
   it('hides when trial expired', () => {
@@ -59,8 +63,8 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    const { container } = render(React.createElement(TrialBanner));
-    expect(container.firstChild).toBeNull();
+    render(React.createElement(TrialBanner));
+    expect(document.body.textContent).toBe('');
   });
 
   it('hides on admin pages', () => {
@@ -71,11 +75,11 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+        subscriptionEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
       },
       hasPlus: false,
     });
-    const { container } = render(React.createElement(TrialBanner));
-    expect(container.firstChild).toBeNull();
+    render(React.createElement(TrialBanner));
+    expect(document.body.textContent).toBe('');
   });
 });
