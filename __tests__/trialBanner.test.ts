@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 import React from 'react';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, waitFor, screen } from '@testing-library/react';
 import { TrialBanner } from '../components/TrialBanner';
 import { useUser } from '../hooks/useUser';
 import { useRouter } from 'next/router';
@@ -29,9 +29,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    const { queryByTestId } = render(React.createElement(TrialBanner));
+    render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(queryByTestId('trial-banner')).not.toBeNull();
+      expect(screen.queryByTestId('trial-banner')).not.toBeNull();
     });
   });
   it('renders when in trial', async () => {
@@ -46,9 +46,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    const { queryByTestId } = render(React.createElement(TrialBanner));
+    render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(queryByTestId('trial-banner')).not.toBeNull();
+      expect(screen.queryByTestId('trial-banner')).not.toBeNull();
     });
   });
 
@@ -64,9 +64,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: true,
     });
-    const { queryByTestId } = render(React.createElement(TrialBanner));
+    render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(queryByTestId('trial-banner')).toBeNull();
+      expect(screen.queryByTestId('trial-banner')).toBeNull();
     });
   });
 
@@ -84,9 +84,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    const { queryByTestId } = render(React.createElement(TrialBanner));
+    render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(queryByTestId('trial-banner')).toBeNull();
+      expect(screen.queryByTestId('trial-banner')).toBeNull();
     });
   });
 
@@ -102,9 +102,9 @@ describe('TrialBanner', () => {
       },
       hasPlus: false,
     });
-    const { queryByTestId } = render(React.createElement(TrialBanner));
+    render(React.createElement(TrialBanner));
     await waitFor(() => {
-      expect(queryByTestId('trial-banner')).toBeNull();
+      expect(screen.queryByTestId('trial-banner')).toBeNull();
     });
   });
 });

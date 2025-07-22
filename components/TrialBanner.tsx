@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useUser } from '@/hooks/useUser';
 
 export function TrialBanner() {
@@ -46,5 +47,5 @@ export function TrialBanner() {
       </div>
     </div>
   );
-  return banner;
+  return typeof document !== 'undefined' ? createPortal(banner, document.body) : null;
 }
