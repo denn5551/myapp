@@ -25,7 +25,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+        subscriptionEndsAt: null,
       },
       hasPlus: false,
     });
@@ -42,7 +42,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+        subscriptionEndsAt: null,
       },
       hasPlus: false,
     });
@@ -60,7 +60,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'active',
-        subscriptionEndsAt: new Date().toISOString(),
+        subscriptionEndsAt: null,
       },
       hasPlus: true,
     });
@@ -80,7 +80,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: past.toISOString(),
         status: 'trial',
-        subscriptionEndsAt: past.toISOString(),
+        subscriptionEndsAt: null,
       },
       hasPlus: false,
     });
@@ -98,7 +98,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+        subscriptionEndsAt: null,
       },
       hasPlus: false,
     });
