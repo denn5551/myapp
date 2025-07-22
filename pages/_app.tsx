@@ -27,7 +27,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <TrialBanner />
-      {isAdminPage ? content : <div style={{ paddingTop: 48 }}>{content}</div>}
+      {isAdminPage ? content : <div className="pt-12">{content}</div>}
     </>
   );
 }
