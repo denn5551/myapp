@@ -14,18 +14,20 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   // Проверяем, находимся ли мы ТОЛЬКО на админских страницах (исключаем dashboard)
   const isAdminPage = router.pathname.startsWith('/admin');
   
+  const content = isAdminPage ? (
+    <AdminLayout>
+      <Component {...pageProps} />
+    </AdminLayout>
+  ) : (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
+
   return (
     <>
       <TrialBanner />
-      {isAdminPage ? (
-        <AdminLayout>
-          <Component {...pageProps} />
-        </AdminLayout>
-      ) : (
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-      )}
+      {isAdminPage ? content : <div style={{ paddingTop: 48 }}>{content}</div>}
     </>
   );
 }

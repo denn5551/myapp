@@ -29,11 +29,9 @@ export function TrialBanner() {
     return null;
   }
 
-  const TRIAL_DAYS = 7;
-  const registered = new Date(user.registeredAt).getTime();
-  const daysSince = Math.floor((Date.now() - registered) / 86400000);
-  const daysLeft = TRIAL_DAYS - daysSince;
-  if (daysLeft <= 0) return null;
+  const ends = new Date(user.subscriptionEndsAt ?? '').getTime();
+  if (isNaN(ends) || Date.now() >= ends) return null;
+  const daysLeft = Math.ceil((ends - Date.now()) / 86400000);
 
   const banner = (
     <div data-testid="trial-banner" className="fixed top-0 inset-x-0 bg-yellow-100 border-b border-yellow-300 z-[9999]">

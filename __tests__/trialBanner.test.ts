@@ -17,15 +17,16 @@ describe('TrialBanner', () => {
     cleanup();
     jest.clearAllMocks();
   });
-  it('does not render before mount', async () => {
+  it('renders after mount', async () => {
     mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
+    const ends = new Date(Date.now() + 3 * 86400000).toISOString();
     mockedUseUser.mockReturnValue({
       user: {
         id: 1,
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: null,
+        subscriptionEndsAt: ends,
       },
       hasPlus: false,
     });
@@ -36,13 +37,14 @@ describe('TrialBanner', () => {
   });
   it('renders when in trial', async () => {
     mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
+    const ends = new Date(Date.now() + 3 * 86400000).toISOString();
     mockedUseUser.mockReturnValue({
       user: {
         id: 1,
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: null,
+        subscriptionEndsAt: ends,
       },
       hasPlus: false,
     });
@@ -60,7 +62,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'active',
-        subscriptionEndsAt: null,
+        subscriptionEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
       },
       hasPlus: true,
     });
@@ -80,7 +82,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: past.toISOString(),
         status: 'trial',
-        subscriptionEndsAt: null,
+        subscriptionEndsAt: past.toISOString(),
       },
       hasPlus: false,
     });
@@ -98,7 +100,7 @@ describe('TrialBanner', () => {
         email: 'a',
         registeredAt: new Date().toISOString(),
         status: 'trial',
-        subscriptionEndsAt: null,
+        subscriptionEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
       },
       hasPlus: false,
     });
