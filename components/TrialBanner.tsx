@@ -6,6 +6,11 @@ import { useUser } from '@/hooks/useUser';
 export function TrialBanner() {
   const router = useRouter();
   const { user, hasPlus } = useUser();
+  console.log('\ud83d\udd14 TrialBanner render:', {
+    pathname: router.pathname,
+    user,
+    hasPlus,
+  });
 
   // 1. Скрываем в админке
   if (router.pathname.startsWith('/admin')) return null;
