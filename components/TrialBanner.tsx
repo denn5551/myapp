@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/useUser';
 
 export function TrialBanner() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
   if (router.pathname.startsWith('/admin')) {
     return null;
   }

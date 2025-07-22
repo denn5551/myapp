@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 import React from 'react';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, waitFor } from '@testing-library/react';
 import { TrialBanner } from '../components/TrialBanner';
 import { useUser } from '../hooks/useUser';
 import { useRouter } from 'next/router';
@@ -17,7 +17,25 @@ describe('TrialBanner', () => {
     cleanup();
     jest.clearAllMocks();
   });
-  it('renders when in trial', () => {
+  it('does not render before mount', async () => {
+    mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
+    mockedUseUser.mockReturnValue({
+      user: {
+        id: 1,
+        email: 'a',
+        registeredAt: new Date().toISOString(),
+        status: 'trial',
+        subscriptionEndsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      },
+      hasPlus: false,
+    });
+    const { container } = render(React.createElement(TrialBanner));
+    expect(container.textContent).toBe('');
+    await waitFor(() => {
+      expect(document.body.textContent).toMatch(/Осталось/);
+    });
+  });
+  it('renders when in trial', async () => {
     mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
     mockedUseUser.mockReturnValue({
       user: {
@@ -30,10 +48,12 @@ describe('TrialBanner', () => {
       hasPlus: false,
     });
     render(React.createElement(TrialBanner));
-    expect(document.body.textContent).toMatch(/Осталось/);
+    await waitFor(() => {
+      expect(document.body.textContent).toMatch(/Осталось/);
+    });
   });
 
-  it('hides when has plus', () => {
+  it('hides when has plus', async () => {
     mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
     mockedUseUser.mockReturnValue({
       user: {
@@ -46,10 +66,12 @@ describe('TrialBanner', () => {
       hasPlus: true,
     });
     render(React.createElement(TrialBanner));
-    expect(document.body.textContent).toBe('');
+    await waitFor(() => {
+      expect(document.body.textContent).toBe('');
+    });
   });
 
-  it('hides when trial expired', () => {
+  it('hides when trial expired', async () => {
     mockedUseRouter.mockReturnValue({ pathname: '/' } as any);
     const past = new Date();
     past.setDate(past.getDate() - 10);
@@ -64,10 +86,12 @@ describe('TrialBanner', () => {
       hasPlus: false,
     });
     render(React.createElement(TrialBanner));
-    expect(document.body.textContent).toBe('');
+    await waitFor(() => {
+      expect(document.body.textContent).toBe('');
+    });
   });
 
-  it('hides on admin pages', () => {
+  it('hides on admin pages', async () => {
     mockedUseRouter.mockReturnValue({ pathname: '/admin/users' } as any);
     mockedUseUser.mockReturnValue({
       user: {
@@ -80,6 +104,8 @@ describe('TrialBanner', () => {
       hasPlus: false,
     });
     render(React.createElement(TrialBanner));
-    expect(document.body.textContent).toBe('');
+    await waitFor(() => {
+      expect(document.body.textContent).toBe('');
+    });
   });
 });
