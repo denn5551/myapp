@@ -158,12 +158,6 @@ export default function AllCategories() {
         </header>
 
         <h1 className="section-title text-2xl font-bold mb-4">Все категории</h1>
-        {subscriptionStatus !== 'active' && (
-          <div className="access-warning">
-            <h3>🔓 Доступ ограничен</h3>
-            <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
-          </div>
-        )}
 
         <section className="categories-grid">
           {paginatedCategories.map(category => (

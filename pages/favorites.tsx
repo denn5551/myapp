@@ -90,12 +90,6 @@ export default function FavoritesPage() {
           </div>
         </header>
 
-        {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
-          <div className="access-warning">
-            <h3>🔓 Доступ ограничен</h3>
-            <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
-          </div>
-        )}
 
         {favoriteAgents.length === 0 ? (
           <p>Нет избранных агентов.</p>

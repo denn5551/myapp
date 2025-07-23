@@ -2,54 +2,45 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import Link from 'next/link';
-import clsx from 'clsx';
 
 interface User {
   id: number;
   email: string;
-  registeredAt: string;
-  subscriptionStatus: 'trial' | 'active' | 'expired';
-  subscriptionStart: string;
-  subscriptionEnd: string;
+  created_at: string;
+  status: 'trial' | 'active' | 'expired';
+  subscriptionEndsAt: string | null;
 }
 
-const initialUsers: User[] = [];
-
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    fetch('/api/users')
-      .then((r) => r.json())
-      .then((data) => {
-        const mapped = data.map((u: any) => ({
-          id: u.id,
-          email: u.email,
-          registeredAt: u.created_at,
-          subscriptionStatus: 'active',
-          subscriptionStart: u.created_at,
-          subscriptionEnd: u.created_at,
-        }));
-        setUsers(mapped);
-      })
+    fetch('/api/admin/users')
+      .then(r => r.json())
+      .then(data => setUsers(data))
       .catch(() => {});
   }, []);
 
-  const handleStatusChange = (id: number, newStatus: User['subscriptionStatus']) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === id ? { ...user, subscriptionStatus: newStatus } : user))
-    );
-  };
-
-  const handleEndDateChange = (id: number, newDate: string) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === id ? { ...user, subscriptionEnd: newDate } : user))
-    );
-  };
+  async function handleFieldChange(
+    userId: number,
+    newStatus: User['status'],
+    newDate: string | null
+  ) {
+    const body = { status: newStatus, subscriptionEndsAt: newDate || null };
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      return;
+    }
+    const updated = await res.json();
+    setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
+  }
 
   const handleDelete = (id: number) => {
-    setUsers(prev => prev.filter(user => user.id !== id));
+    setUsers(prev => prev.filter(u => u.id !== id));
   };
 
   return (
@@ -64,7 +55,6 @@ export default function AdminUsersPage() {
             <th className="border p-2">Email</th>
             <th className="border p-2">Дата регистрации</th>
             <th className="border p-2">Статус</th>
-            <th className="border p-2">Начало подписки</th>
             <th className="border p-2">Окончание подписки</th>
             <th className="border p-2">Действия</th>
           </tr>
@@ -73,13 +63,17 @@ export default function AdminUsersPage() {
           {users.map(user => (
             <tr key={user.id} className="text-sm text-center">
               <td className="border p-2">{user.email}</td>
-              <td className="border p-2">{user.registeredAt}</td>
+              <td className="border p-2">{user.created_at}</td>
               <td className="border p-2">
                 <select
                   className="border rounded px-2 py-1 text-sm"
-                  value={user.subscriptionStatus}
+                  value={user.status}
                   onChange={e =>
-                    handleStatusChange(user.id, e.target.value as User['subscriptionStatus'])
+                    handleFieldChange(
+                      user.id,
+                      e.target.value as User['status'],
+                      user.subscriptionEndsAt
+                    )
                   }
                 >
                   <option value="trial">trial</option>
@@ -87,13 +81,18 @@ export default function AdminUsersPage() {
                   <option value="expired">expired</option>
                 </select>
               </td>
-              <td className="border p-2">{user.subscriptionStart}</td>
               <td className="border p-2">
                 <input
                   type="date"
                   className="border rounded px-2 py-1 text-sm"
-                  value={user.subscriptionEnd}
-                  onChange={e => handleEndDateChange(user.id, e.target.value)}
+                  value={user.subscriptionEndsAt ? user.subscriptionEndsAt.split('T')[0] : ''}
+                  onChange={e =>
+                    handleFieldChange(
+                      user.id,
+                      user.status,
+                      e.target.value || null
+                    )
+                  }
                 />
               </td>
               <td className="border p-2">

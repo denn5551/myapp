@@ -4,5 +4,8 @@ module.exports = {
   testMatch: ['**/?(*.)+(test).ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1'
+  },
+  globals: {
+    'ts-jest': { tsconfig: { jsx: 'react-jsx' } }
   }
 };

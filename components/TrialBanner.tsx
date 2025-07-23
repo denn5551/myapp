@@ -1,31 +1,42 @@
-// components/TrialBanner.tsx
+import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
+import { useUser } from '@/hooks/useUser';
 
-interface TrialBannerProps {
-  subscriptionStatus: 'trial' | 'active' | 'expired';
-}
-
-export default function TrialBanner({ subscriptionStatus }: TrialBannerProps) {
+export function TrialBanner() {
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const [visible, setVisible] = useState(false);
+  const { user, hasPlus } = useUser();
 
   useEffect(() => {
-    const hiddenPaths = ['/subscribe', '/subscribe/success', '/admin'];
-    const shouldShow =
-      subscriptionStatus === 'trial' &&
-      !hiddenPaths.some(path => router.pathname.startsWith(path));
-    setVisible(shouldShow);
-  }, [router.pathname, subscriptionStatus]);
+    setMounted(true);
+  }, []);
 
-  if (!visible) return null;
+  console.log('🔔 TrialBanner render:', {
+    pathname: router.pathname,
+    user,
+    hasPlus,
+  });
 
-  return (
-    <div className="bg-yellow-100 text-yellow-800 px-4 py-2 text-sm text-center border-b border-yellow-300 z-50 fixed top-0 left-0 w-full">
-      🧪 Пробный период. Чтобы пользоваться всеми ИИ-помощниками без ограничений,{' '}
-      <a href="/subscribe" className="underline font-medium hover:text-yellow-900 ml-1">
-        оформите подписку
-      </a>
+  if (!mounted) return null;
+  if (router.pathname.startsWith('/admin')) return null;
+  if (!user || hasPlus || user.status !== 'trial') return null;
+  const ends = new Date(user.subscriptionEndsAt || '').getTime();
+  if (isNaN(ends) || Date.now() >= ends) return null;
+
+  const daysLeft = Math.ceil((ends - Date.now()) / 86400000);
+
+  const banner = (
+    <div data-testid="trial-banner" className="fixed top-0 inset-x-0 h-12 bg-yellow-100 border-b border-yellow-300 z-[9999]">
+      <div className="max-w-screen-xl mx-auto h-full flex items-center justify-between px-4">
+        Осталось <span className="font-semibold">{daysLeft}</span>{' '}
+        {daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}.{' '}
+        Чтобы пользоваться всеми ИИ-помощниками без ограничений,{' '}
+        <Link href="/subscribe" className="underline">оформите подписку</Link>.
+      </div>
     </div>
   );
+
+  return createPortal(banner, document.body);
 }

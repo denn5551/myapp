@@ -4,6 +4,7 @@ import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import AdminLayout from '@/components/AdminLayout';
+import { TrialBanner } from '@/components/TrialBanner';
 import '@/styles/global.css';
 import '@/styles/sidebar.css';
 
@@ -13,17 +14,23 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   // Проверяем, находимся ли мы ТОЛЬКО на админских страницах (исключаем dashboard)
   const isAdminPage = router.pathname.startsWith('/admin');
   
-  if (isAdminPage) {
-    return (
-      <AdminLayout>
-        <Component {...pageProps} />
-      </AdminLayout>
-    );
-  }
-  
-  return (
+  const content = isAdminPage ? (
+    <AdminLayout>
+      <Component {...pageProps} />
+    </AdminLayout>
+  ) : (
     <Layout>
       <Component {...pageProps} />
     </Layout>
+  );
+
+  return (
+    <>
+      {/* 1. Подключаем баннер до основного контента */}
+      <TrialBanner />
+
+      {/* 2. Сдвигаем весь контент вниз, если не админка */}
+      <div className={isAdminPage ? '' : 'pt-12'}>{content}</div>
+    </>
   );
 }

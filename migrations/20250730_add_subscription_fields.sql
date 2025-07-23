@@ -1,0 +1,4 @@
+BEGIN TRANSACTION;
+ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'trial';
+ALTER TABLE users ADD COLUMN subscription_ends_at TEXT;
+COMMIT;

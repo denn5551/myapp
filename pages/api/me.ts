@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { openDb } from '../../lib/db';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   if (req.headers.origin) {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
@@ -10,29 +11,41 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = req.headers.cookie || '';
   const emailCookie = cookies.split(';').find(c => c.trim().startsWith('email='));
   const decodedEmail = emailCookie ? decodeURIComponent(emailCookie.split('=')[1]) : null;
-  const hasPaid = cookies.includes('subscriptionPaid=true');
+  const paidCookie = cookies.split(';').find(c => c.trim().startsWith('subscriptionPaid='));
   if (!decodedEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const now = new Date();
-  const registered = new Date(); // Используем текущую дату как дату регистрации
-  const diffInDays = Math.floor((now.getTime() - registered.getTime()) / (1000 * 60 * 60 * 24));
+  const db = await openDb();
+  const user = await db.get(
+    'SELECT id, email, created_at, status, subscription_ends_at as subscriptionEndsAt FROM users WHERE email = ?',
+    decodedEmail
+  );
+  await db.close();
 
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
 
-  let status: 'trial' | 'active' | 'expired' = 'expired';
+  const hasPlus = !!paidCookie || user.status === 'active';
 
-  if (hasPaid) {
-    status = 'active';
-  } else if (diffInDays < 3) {
-    status = 'trial';
+  let subscriptionEndsAt: string | null = user.subscriptionEndsAt;
+  if (!subscriptionEndsAt && user.status === 'trial') {
+    const base = new Date(user.created_at).getTime();
+    subscriptionEndsAt = new Date(base + 7 * 86400000).toISOString();
+  } else if (subscriptionEndsAt) {
+    subscriptionEndsAt = new Date(subscriptionEndsAt).toISOString();
+  } else {
+    subscriptionEndsAt = null;
   }
 
   res.status(200).json({
-    email: decodedEmail,
-    registeredAt: registered.toISOString(),
-    subscriptionStatus: status,
-    trialEndsIn: 3 - diffInDays,
-    isAdmin: decodedEmail === 'kcc-kem@ya.ru'
+    id: user.id,
+    email: user.email,
+    registeredAt: user.created_at,
+    status: user.status,
+    subscriptionEndsAt,
+    hasPlus,
+    isAdmin: decodedEmail === 'kcc-kem@ya.ru',
   });
 }
