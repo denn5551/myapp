@@ -9,6 +9,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const { message, assistant_id } = req.body;
 
+  if (!assistant_id) {
+    console.log('assistant_id отсутствует');
+  } else {
+    console.log('assistant_id:', assistant_id);
+  }
+
   if (!message || !assistant_id) {
     return res.status(400).json({ error: 'Missing message or assistant_id' });
   }
@@ -89,9 +95,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     return res.status(200).json({ role: 'assistant', content: lastAssistantMessage.content[0].text.value });
-  } catch (error) {
-    console.error('❌ Ошибка в Assistant API:', error);
-    return res.status(500).json({ error: 'Ошибка в работе с OpenAI' });
+  } catch (error: any) {
+    console.error('Ошибка OpenAI', error.response?.data || error.message || error);
+    return res.status(500).json({ error: 'assistant_unavailable' });
   }
 };
 
