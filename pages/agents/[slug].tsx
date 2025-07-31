@@ -218,16 +218,16 @@ export default function AgentChat({ slug }: PageProps) {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || 'request failed')
       }
 
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'user', content: input }, data]);
       setInput('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
-      setErrorMsg('Произошла техническая ошибка. Попробуйте позже.');
+      setErrorMsg('Ассистент временно недоступен. Попробуйте позже или выберите другого.');
     }
     setLoading(false);
   }
