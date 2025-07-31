@@ -10,5 +10,10 @@ export async function openDb() {
   if (!hasFlag) {
     await db.run('ALTER TABLE agents ADD COLUMN display_on_main INTEGER DEFAULT 0');
   }
+  const hasSlug = cols.some(c => c.name === 'slug');
+  if (!hasSlug) {
+    await db.run('ALTER TABLE agents ADD COLUMN slug TEXT');
+    await db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_slug ON agents(slug)');
+  }
   return db;
 }

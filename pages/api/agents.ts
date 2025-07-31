@@ -8,6 +8,7 @@ function mapAgent(row: any) {
     name: row.name,
     short_description: row.short_description,
     full_description: row.description,
+    slug: row.slug,
     category_id: row.category_id,
     display_on_main: !!row.display_on_main,
     created_at: row.created_at,
@@ -22,6 +23,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const row = await db.get('SELECT * FROM agents WHERE id = ?', req.query.id);
       const agent = mapAgent(row);
       console.log('API agents:', agent ? 1 : 0, agent);
+      await db.close();
+      return res.status(200).json(agent);
+    }
+    if (req.query.slug) {
+      const row = await db.get('SELECT * FROM agents WHERE slug = ?', req.query.slug);
+      const agent = mapAgent(row);
       await db.close();
       return res.status(200).json(agent);
     }

@@ -4,6 +4,9 @@ import { useSidebarState } from '@/hooks/useSidebarState';
 import Link from 'next/link';
 import React from 'react';
 
+import { GetServerSideProps } from 'next';
+import { getAgentBySlug } from '@/lib/getAgentBySlug';
+
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -93,13 +96,22 @@ const formatMessageText = (text: string): ReactElement[] => {
   });
 };
 
-export default function AgentChat() {
+interface PageProps {
+  agent: {
+    assistantId: string;
+    name: string;
+    prompt?: string;
+  };
+}
+
+export default function AgentChat({ agent }: PageProps) {
   const router = useRouter();
-  const { id } = router.query;
+  const { slug } = router.query;
+  const id = agent.assistantId;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
-  const [assistantName, setAssistantName] = useState('');
+  const [assistantName, setAssistantName] = useState(agent.name);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,7 +121,7 @@ export default function AgentChat() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (router.isReady && typeof id === 'string') {
+    if (router.isReady) {
       fetch(`/api/chats/${id}/touch`, { method: 'POST', credentials: 'include' })
     }
   }, [router.isReady, id])
@@ -139,7 +151,7 @@ export default function AgentChat() {
 
   // Загрузка истории сообщений из localStorage (только один раз)
   useEffect(() => {
-    if (router.isReady && typeof id === 'string' && !messagesLoaded) {
+    if (router.isReady && !messagesLoaded) {
       const saved = localStorage.getItem(`chat_${id}`);
       if (saved) {
         try {
@@ -154,20 +166,12 @@ export default function AgentChat() {
 
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
-    if (typeof id === 'string' && messagesLoaded) {
+    if (messagesLoaded) {
       localStorage.setItem(`chat_${id}`, JSON.stringify(messages));
     }
   }, [messages, id, messagesLoaded]);
 
-  // Получение имени ассистента
-  useEffect(() => {
-    if (router.isReady && typeof id === 'string') {
-      fetch('/api/agents?id=' + id)
-        .then((r) => r.json())
-        .then((a) => setAssistantName(a?.name || 'Ассистент'))
-        .catch(() => setAssistantName('Ассистент'));
-    }
-  }, [router.isReady, id]);
+
 
 
   const toggleUserMenu = () => {
@@ -186,7 +190,7 @@ export default function AgentChat() {
   };
 
   async function sendMessage() {
-    if (!input.trim() || typeof id !== 'string') return;
+    if (!input.trim()) return;
 
     setLoading(true);
     try {
@@ -238,9 +242,7 @@ export default function AgentChat() {
       if (res.ok) {
         console.log('🗑️ Чат очищен успешно');
         setMessages([]);
-        if (typeof id === 'string') {
-          localStorage.removeItem(`chat_${id}`);
-        }
+        localStorage.removeItem(`chat_${id}`);
       } else {
         console.error('Ошибка при очистке чата:', res.status);
       }
@@ -273,7 +275,7 @@ export default function AgentChat() {
             <button className="btn-clear-chat" onClick={handleClearChat}>
               Очистить чат
             </button>
-            {typeof id === 'string' && <FavoriteButton agentId={id} />}
+            <FavoriteButton agentId={id} />
           </div>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">
@@ -356,3 +358,13 @@ export default function AgentChat() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+  const { slug } = ctx.params as { slug: string };
+  const agent = await getAgentBySlug(slug);
+  if (!agent) {
+    return { notFound: true };
+  }
+  return { props: { agent } };
+};
+
