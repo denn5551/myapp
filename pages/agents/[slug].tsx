@@ -97,21 +97,18 @@ const formatMessageText = (text: string): ReactElement[] => {
 };
 
 interface PageProps {
-  agent: {
-    assistantId: string;
-    name: string;
-    prompt?: string;
-  };
+  slug: string;
 }
 
-export default function AgentChat({ agent }: PageProps) {
+export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
-  const { slug } = router.query;
-  const id = agent.assistantId;
+  const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const id = agent?.assistantId || '';
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
-  const [assistantName, setAssistantName] = useState(agent.name);
+  const [assistantName, setAssistantName] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -121,7 +118,24 @@ export default function AgentChat({ agent }: PageProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (router.isReady) {
+    if (!router.isReady) return
+    fetch(`/api/agents/${slug}`)
+      .then(res => {
+        if (!res.ok) throw new Error('not found')
+        return res.json()
+      })
+      .then(data => {
+        setAgent({ assistantId: data.assistant_id, name: data.name })
+        setAssistantName(data.name)
+      })
+      .catch(err => {
+        console.error('Failed to load agent:', err)
+        setErrorMsg('Ассистент не найден')
+      })
+  }, [router.isReady, slug])
+
+  useEffect(() => {
+    if (router.isReady && id) {
       fetch(`/api/chats/${id}/touch`, { method: 'POST', credentials: 'include' })
     }
   }, [router.isReady, id])
@@ -190,7 +204,10 @@ export default function AgentChat({ agent }: PageProps) {
   };
 
   async function sendMessage() {
-    if (!input.trim()) return;
+    if (!input.trim() || !id) {
+      if (!id) setErrorMsg('assistant_id отсутствует');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -210,7 +227,7 @@ export default function AgentChat({ agent }: PageProps) {
       setInput('');
     } catch (error) {
       console.error('Ошибка при общении с ассистентом:', error);
-      alert('Произошла ошибка. Проверь API ключ или ID ассистента.');
+      setErrorMsg('Произошла техническая ошибка. Попробуйте позже.');
     }
     setLoading(false);
   }
@@ -234,6 +251,7 @@ export default function AgentChat({ agent }: PageProps) {
 
   const handleClearChat = async () => {
     console.log('🗑️ Очистка чата: запрошено');
+    if (!id) return;
     try {
       const res = await fetch(`/api/agents/${id}/clear`, {
         method: 'POST',
@@ -294,6 +312,9 @@ export default function AgentChat({ agent }: PageProps) {
           </div>
         </header>
 
+        {errorMsg && (
+          <div className="error-message">{errorMsg}</div>
+        )}
         <div className="chat-container">
           <div className="chat-messages">
             {messages.length === 0 ? (
@@ -365,6 +386,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
   if (!agent) {
     return { notFound: true };
   }
-  return { props: { agent } };
+  return { props: { slug } };
 };
 
