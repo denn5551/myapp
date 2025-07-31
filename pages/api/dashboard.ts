@@ -8,6 +8,7 @@ function mapAgent(row: any) {
     name: row.name,
     short_description: row.short_description,
     full_description: row.description,
+    slug: row.slug,
     category_id: row.category_id,
     display_on_main: !!row.display_on_main,
     created_at: row.created_at,
