@@ -1,4 +1,4 @@
-import favToggle from '../pages/api/agents/[agentId]/favorite'
+import favToggle from '../pages/api/agents/by-id/[id]/favorite'
 import listFavs from '../pages/api/users/me/favorites'
 import httpMocks from 'node-mocks-http'
 import { openDb } from '../lib/db'

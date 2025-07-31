@@ -20,7 +20,7 @@ export default function FavoriteButton({ agentId }: Props) {
   const toggle = async () => {
     const method = isFav ? 'DELETE' : 'POST'
     try {
-      await fetch(`/api/agents/${agentId}/favorite`, { method, credentials: 'include' })
+      await fetch(`/api/agents/by-id/${agentId}/favorite`, { method, credentials: 'include' })
       setFavoriteIds(prev =>
         isFav ? prev.filter(id => id !== agentId) : [...prev, agentId]
       )
