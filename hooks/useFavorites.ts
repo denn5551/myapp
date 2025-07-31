@@ -16,7 +16,7 @@ export function useFavorites() {
   )
   const toggleFavorite = useCallback(async (agent:{id:string,name:string}) => {
     const method = isFavorite(agent.id) ? 'DELETE' : 'POST'
-    await fetch(`/api/agents/${agent.id}/favorite`, { method, credentials: 'include' })
+    await fetch(`/api/agents/by-id/${agent.id}/favorite`, { method, credentials: 'include' })
     await load()
   }, [isFavorite, load])
   return { favorites, isFavorite, toggleFavorite, loadFavorites: load }

@@ -1,4 +1,4 @@
-import handler from '../pages/api/agents/[agentId]'
+import handler from '../pages/api/agents/[slug]'
 import httpMocks from 'node-mocks-http'
 import { getAgentBySlug } from '../lib/getAgentBySlug'
 
@@ -14,7 +14,7 @@ test('returns agent data', async () => {
   const res = httpMocks.createResponse()
   await handler(req, res)
   expect(res._getStatusCode()).toBe(200)
-  expect(res._getJSONData()).toEqual({ name: 'A', slug: 'agent', assistant_id: 'a1' })
+  expect(res._getJSONData()).toEqual({ name: 'A', slug: 'agent', assistant_id: 'a1', isFavorite: false })
 })
 
 test('404 when missing', async () => {
