@@ -112,6 +112,7 @@ export default function AgentChat({ slug }: PageProps) {
   const [assistantName, setAssistantName] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
@@ -176,7 +177,13 @@ export default function AgentChat({ slug }: PageProps) {
       const saved = localStorage.getItem(`chat_${id}`);
       if (saved) {
         try {
-          setMessages(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setMessages(parsed);
+          } else {
+            setMessages(parsed.messages || []);
+            if (parsed.threadId) setThreadId(parsed.threadId);
+          }
         } catch {
           setMessages([]);
         }
@@ -188,9 +195,9 @@ export default function AgentChat({ slug }: PageProps) {
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
     if (messagesLoaded) {
-      localStorage.setItem(`chat_${id}`, JSON.stringify(messages));
+      localStorage.setItem(`chat_${id}`, JSON.stringify({ messages, threadId }));
     }
-  }, [messages, id, messagesLoaded]);
+  }, [messages, threadId, id, messagesLoaded]);
 
 
 
@@ -221,20 +228,20 @@ export default function AgentChat({ slug }: PageProps) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, assistant_id: id }),
+        body: JSON.stringify({ message: input, assistant_id: id, thread_id: threadId }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.error || 'request failed')
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || 'request failed');
       }
 
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'user', content: input }, data]);
+      setThreadId(data.thread_id || threadId);
+      setMessages(prev => [...prev, { role: 'user', content: input }, { role: data.role, content: data.content }]);
       setInput('');
     } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
-      setErrorMsg('Ассистент временно недоступен. Попробуйте позже или выберите другого.');
+      setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
     }
     setLoading(false);
   }
@@ -267,6 +274,7 @@ export default function AgentChat({ slug }: PageProps) {
       if (res.ok) {
         console.log('🗑️ Чат очищен успешно');
         setMessages([]);
+        setThreadId(null);
         localStorage.removeItem(`chat_${id}`);
       } else {
         console.error('Ошибка при очистке чата:', res.status);
