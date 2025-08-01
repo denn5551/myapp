@@ -60,7 +60,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     if (!runRes.ok) {
-      console.error('❌ Run не запущен', runRes.status, runRes.statusText);
+      console.error('❌ Run не запущен', {
+        assistant_id,
+        thread_id: threadId,
+        user_message: message,
+        status: runRes.status,
+        statusText: runRes.statusText,
+      });
       return res
         .status(500)
         .json({ error: 'assistant_unavailable', details: 'run failed to start' });
@@ -70,10 +76,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     console.log('▶️ Run запущен:', { id: run.id, status: run.status });
 
     if (run.status === 'failed') {
-      console.error('OpenAI run.last_error:', run.last_error, {
+      console.error('Assistant run failed', {
         assistant_id,
         thread_id: threadId,
-        message,
+        user_message: message,
+        run_status: run.status,
+        last_error: run.last_error,
       });
       return res.status(500).json({
         error: 'assistant_unavailable',
@@ -103,11 +111,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (status !== 'completed') {
-      console.error('OpenAI run.last_error:', lastError, {
+      console.error('Assistant run failed', {
         assistant_id,
         thread_id: threadId,
-        message,
-        status,
+        user_message: message,
+        run_status: status,
+        last_error: lastError,
       });
       return res.status(500).json({
         error: 'assistant_unavailable',

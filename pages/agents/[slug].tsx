@@ -14,6 +14,7 @@ import FavoriteButton from '@/components/FavoriteButton';
 
 
 const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === 'true';
+const debugMode = process.env.NEXT_PUBLIC_DEBUG === 'true';
 
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string): ReactElement[] => {
@@ -106,6 +107,7 @@ export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
   const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errorDetails, setErrorDetails] = useState<any>(null)
   const [isFavorite, setIsFavorite] = useState(false)
   const id = agent?.assistantId || ''
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -241,7 +243,11 @@ export default function AgentChat({ slug }: PageProps) {
 
       const data = await res.json().catch(() => null);
       if (!res.ok || data?.error) {
-        throw new Error(data?.error || 'request failed');
+        console.error('Assistant response error', data);
+        setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
+        setErrorDetails(data?.details);
+        setLoading(false);
+        return;
       }
 
       if (!disableThreadReuse) {
@@ -249,9 +255,12 @@ export default function AgentChat({ slug }: PageProps) {
       }
       setMessages(prev => [...prev, { role: 'user', content: input }, { role: data.role, content: data.content }]);
       setInput('');
+      setErrorMsg(null);
+      setErrorDetails(null);
     } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
       setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
+      setErrorDetails(error?.details || { message: error.message });
     }
     setLoading(false);
   }
@@ -338,7 +347,12 @@ export default function AgentChat({ slug }: PageProps) {
         </header>
 
         {errorMsg ? (
-          <div className="error-message">{errorMsg}</div>
+          <div className="error-message">
+            {errorMsg}
+            {debugMode && errorDetails?.message && (
+              <p className="text-sm text-gray-500">{errorDetails.message}</p>
+            )}
+          </div>
         ) : (
           <div className="chat-container">
             <div className="chat-messages">
