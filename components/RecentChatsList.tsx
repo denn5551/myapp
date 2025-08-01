@@ -56,10 +56,17 @@ export default function RecentChatsList() {
       <ul className="recent-chats-list" ref={listRef} style={{ overflowY: 'auto' }}>
         {chats.map(chat => (
           <li key={chat.id} className="recent-chat-item">
-            <Link href={`/agents/${chat.slug || chat.id}`}>
-              <div className="chat-title">{chat.name}</div>
-              <div className="chat-date">{chat.lastMessageAt}</div>
-            </Link>
+            {chat.slug ? (
+              <Link href={`/agents/${chat.slug}`}>
+                <div className="chat-title">{chat.name}</div>
+                <div className="chat-date">{chat.lastMessageAt}</div>
+              </Link>
+            ) : (
+              <>
+                <div className="chat-title">{chat.name}</div>
+                <div className="chat-date">{chat.lastMessageAt}</div>
+              </>
+            )}
           </li>
         ))}
         <div ref={sentinelRef} style={{ height: 1 }} />

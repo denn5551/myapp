@@ -13,7 +13,7 @@ export default function AgentCard({ id, slug, name, short_description }: Props) 
   return (
     <div className="agent-card">
       <h4 className="agent-title">
-        <Link href={`/agents/${slug || id}`}>{name}</Link>
+        {slug ? <Link href={`/agents/${slug}`}>{name}</Link> : name}
       </h4>
       <p className="agent-description">{short_description}</p>
       <FavoriteButton agentId={id} />
