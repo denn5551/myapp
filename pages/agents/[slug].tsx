@@ -13,6 +13,9 @@ import CloseIcon from '@/components/CloseIcon';
 import FavoriteButton from '@/components/FavoriteButton';
 
 
+const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === 'true';
+const debugMode = process.env.NEXT_PUBLIC_DEBUG === 'true';
+
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string): ReactElement[] => {
   // Разбиваем текст на абзацы по двойным переносам строки
@@ -104,6 +107,7 @@ export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
   const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errorDetails, setErrorDetails] = useState<any>(null)
   const [isFavorite, setIsFavorite] = useState(false)
   const id = agent?.assistantId || ''
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -112,6 +116,7 @@ export default function AgentChat({ slug }: PageProps) {
   const [assistantName, setAssistantName] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
@@ -176,7 +181,13 @@ export default function AgentChat({ slug }: PageProps) {
       const saved = localStorage.getItem(`chat_${id}`);
       if (saved) {
         try {
-          setMessages(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setMessages(parsed);
+          } else {
+            setMessages(parsed.messages || []);
+            if (parsed.threadId && !disableThreadReuse) setThreadId(parsed.threadId);
+          }
         } catch {
           setMessages([]);
         }
@@ -188,9 +199,12 @@ export default function AgentChat({ slug }: PageProps) {
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
     if (messagesLoaded) {
-      localStorage.setItem(`chat_${id}`, JSON.stringify(messages));
+      localStorage.setItem(
+        `chat_${id}`,
+        JSON.stringify({ messages, threadId: disableThreadReuse ? null : threadId })
+      );
     }
-  }, [messages, id, messagesLoaded]);
+  }, [messages, threadId, id, messagesLoaded]);
 
 
 
@@ -218,23 +232,35 @@ export default function AgentChat({ slug }: PageProps) {
 
     setLoading(true);
     try {
+      const body: any = { message: input, assistant_id: id };
+      if (!disableThreadReuse && threadId) body.thread_id = threadId;
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, assistant_id: id }),
+        body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.error || 'request failed')
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        console.error('Assistant response error', data);
+        setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
+        setErrorDetails(data?.details);
+        setLoading(false);
+        return;
       }
 
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'user', content: input }, data]);
+      if (!disableThreadReuse) {
+        setThreadId(data.thread_id || threadId);
+      }
+      setMessages(prev => [...prev, { role: 'user', content: input }, { role: data.role, content: data.content }]);
       setInput('');
+      setErrorMsg(null);
+      setErrorDetails(null);
     } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
-      setErrorMsg('Ассистент временно недоступен. Попробуйте позже или выберите другого.');
+      setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
+      setErrorDetails(error?.details || { message: error.message });
     }
     setLoading(false);
   }
@@ -267,6 +293,7 @@ export default function AgentChat({ slug }: PageProps) {
       if (res.ok) {
         console.log('🗑️ Чат очищен успешно');
         setMessages([]);
+        setThreadId(null);
         localStorage.removeItem(`chat_${id}`);
       } else {
         console.error('Ошибка при очистке чата:', res.status);
@@ -320,7 +347,12 @@ export default function AgentChat({ slug }: PageProps) {
         </header>
 
         {errorMsg ? (
-          <div className="error-message">{errorMsg}</div>
+          <div className="error-message">
+            {errorMsg}
+            {debugMode && errorDetails?.message && (
+              <p className="text-sm text-gray-500">{errorDetails.message}</p>
+            )}
+          </div>
         ) : (
           <div className="chat-container">
             <div className="chat-messages">
