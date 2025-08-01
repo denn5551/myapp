@@ -4,6 +4,9 @@ import { useSidebarState } from '@/hooks/useSidebarState';
 import Link from 'next/link';
 import React from 'react';
 
+import { GetServerSideProps } from 'next';
+import { getAgentBySlug } from '@/lib/getAgentBySlug';
+
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -93,9 +96,16 @@ const formatMessageText = (text: string): ReactElement[] => {
   });
 };
 
-export default function AgentChat() {
+interface PageProps {
+  slug: string;
+}
+
+export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
-  const { id } = router.query;
+  const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const id = agent?.assistantId || ''
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
@@ -109,7 +119,30 @@ export default function AgentChat() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (router.isReady && typeof id === 'string') {
+    if (!router.isReady) return
+    fetch(`/api/agents/${slug}`)
+      .then(res => {
+        if (!res.ok) throw new Error('not found')
+        return res.json()
+      })
+      .then(data => {
+        if (!data.assistant_id) {
+          console.log('assistant_id отсутствует')
+          setErrorMsg('Ассистент не найден')
+          return
+        }
+        setAgent({ assistantId: data.assistant_id, name: data.name })
+        setAssistantName(data.name)
+        setIsFavorite(!!data.isFavorite)
+      })
+      .catch(err => {
+        console.error(`Ассистент не найден по slug: ${slug}`, err)
+        setErrorMsg('Ассистент не найден')
+      })
+  }, [router.isReady, slug])
+
+  useEffect(() => {
+    if (router.isReady && id) {
       fetch(`/api/chats/${id}/touch`, { method: 'POST', credentials: 'include' })
     }
   }, [router.isReady, id])
@@ -139,7 +172,7 @@ export default function AgentChat() {
 
   // Загрузка истории сообщений из localStorage (только один раз)
   useEffect(() => {
-    if (router.isReady && typeof id === 'string' && !messagesLoaded) {
+    if (router.isReady && !messagesLoaded) {
       const saved = localStorage.getItem(`chat_${id}`);
       if (saved) {
         try {
@@ -154,20 +187,12 @@ export default function AgentChat() {
 
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
-    if (typeof id === 'string' && messagesLoaded) {
+    if (messagesLoaded) {
       localStorage.setItem(`chat_${id}`, JSON.stringify(messages));
     }
   }, [messages, id, messagesLoaded]);
 
-  // Получение имени ассистента
-  useEffect(() => {
-    if (router.isReady && typeof id === 'string') {
-      fetch('/api/agents?id=' + id)
-        .then((r) => r.json())
-        .then((a) => setAssistantName(a?.name || 'Ассистент'))
-        .catch(() => setAssistantName('Ассистент'));
-    }
-  }, [router.isReady, id]);
+
 
 
   const toggleUserMenu = () => {
@@ -186,7 +211,10 @@ export default function AgentChat() {
   };
 
   async function sendMessage() {
-    if (!input.trim() || typeof id !== 'string') return;
+    if (!input.trim() || !id) {
+      if (!id) setErrorMsg('assistant_id отсутствует');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -197,16 +225,16 @@ export default function AgentChat() {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || 'request failed')
       }
 
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'user', content: input }, data]);
       setInput('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
-      alert('Произошла ошибка. Проверь API ключ или ID ассистента.');
+      setErrorMsg('Ассистент временно недоступен. Попробуйте позже или выберите другого.');
     }
     setLoading(false);
   }
@@ -230,6 +258,7 @@ export default function AgentChat() {
 
   const handleClearChat = async () => {
     console.log('🗑️ Очистка чата: запрошено');
+    if (!id) return;
     try {
       const res = await fetch(`/api/agents/${id}/clear`, {
         method: 'POST',
@@ -238,9 +267,7 @@ export default function AgentChat() {
       if (res.ok) {
         console.log('🗑️ Чат очищен успешно');
         setMessages([]);
-        if (typeof id === 'string') {
-          localStorage.removeItem(`chat_${id}`);
-        }
+        localStorage.removeItem(`chat_${id}`);
       } else {
         console.error('Ошибка при очистке чата:', res.status);
       }
@@ -273,7 +300,7 @@ export default function AgentChat() {
             <button className="btn-clear-chat" onClick={handleClearChat}>
               Очистить чат
             </button>
-            {typeof id === 'string' && <FavoriteButton agentId={id} />}
+            <FavoriteButton agentId={id} initialIsFavorite={isFavorite} />
           </div>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">
@@ -292,67 +319,81 @@ export default function AgentChat() {
           </div>
         </header>
 
-        <div className="chat-container">
-          <div className="chat-messages">
-            {messages.length === 0 ? (
-              <div className="welcome-message">
-                <h3>Добро пожаловать в чат с {assistantName}!</h3>
-                <p>Начните разговор, написав ваше первое сообщение.</p>
+        {errorMsg ? (
+          <div className="error-message">{errorMsg}</div>
+        ) : (
+          <div className="chat-container">
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div className="welcome-message">
+                  <h3>Добро пожаловать в чат с {assistantName}!</h3>
+                  <p>Начните разговор, написав ваше первое сообщение.</p>
+                </div>
+              ) : (
+                messages.map((msg, i) => (
+                  <div key={i} className={`message ${msg.role}`}>
+                    <div className="message-avatar">
+                      {msg.role === 'user' ? email.charAt(0).toUpperCase() : 'ИИ'}
+                    </div>
+                    <div className="message-content">
+                      <div className="message-author">
+                        {msg.role === 'user' ? 'Вы' : assistantName}
+                      </div>
+                      <div className="message-text">
+                        {formatMessageText(msg.content)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {subscriptionStatus === 'expired' ? (
+              <div className="chat-locked">
+                <div className="locked-message">
+                  <h3>🔒 Доступ к чату ограничен</h3>
+                  <p>Чтобы продолжить общение с ИИ-помощниками, оформите подписку.</p>
+                  <Link href="/subscribe" className="upgrade-button">
+                    Оформить подписку
+                  </Link>
+                </div>
               </div>
             ) : (
-              messages.map((msg, i) => (
-                <div key={i} className={`message ${msg.role}`}>
-                  <div className="message-avatar">
-                    {msg.role === 'user' ? email.charAt(0).toUpperCase() : 'ИИ'}
-                  </div>
-                  <div className="message-content">
-                    <div className="message-author">
-                      {msg.role === 'user' ? 'Вы' : assistantName}
-                    </div>
-                    <div className="message-text">
-                      {formatMessageText(msg.content)}
-                    </div>
-                  </div>
+              <div className="chat-input-container">
+                <div className="chat-input-wrapper">
+                  <textarea
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    className="chat-input"
+                    placeholder="Введите сообщение..."
+                    rows={1}
+                    disabled={loading}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={loading || !input.trim()}
+                    className="send-button"
+                  >
+                    {loading ? '⏳' : '↑'}
+                  </button>
                 </div>
-              ))
+              </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
-
-          {subscriptionStatus === 'expired' ? (
-            <div className="chat-locked">
-              <div className="locked-message">
-                <h3>🔒 Доступ к чату ограничен</h3>
-                <p>Чтобы продолжить общение с ИИ-помощниками, оформите подписку.</p>
-                <Link href="/subscribe" className="upgrade-button">
-                  Оформить подписку
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="chat-input-container">
-              <div className="chat-input-wrapper">
-                <textarea
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  className="chat-input"
-                  placeholder="Введите сообщение..."
-                  rows={1}
-                  disabled={loading}
-                />
-                <button 
-                  onClick={sendMessage} 
-                  disabled={loading || !input.trim()} 
-                  className="send-button"
-                >
-                  {loading ? '⏳' : '↑'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </main>
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+  const { slug } = ctx.params as { slug: string };
+  const agent = await getAgentBySlug(slug);
+  if (!agent) {
+    return { notFound: true };
+  }
+  return { props: { slug } };
+};
+
