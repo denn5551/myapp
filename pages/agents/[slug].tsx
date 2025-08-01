@@ -13,6 +13,8 @@ import CloseIcon from '@/components/CloseIcon';
 import FavoriteButton from '@/components/FavoriteButton';
 
 
+const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === 'true';
+
 // Функция для форматирования текста с абзацами
 const formatMessageText = (text: string): ReactElement[] => {
   // Разбиваем текст на абзацы по двойным переносам строки
@@ -182,7 +184,7 @@ export default function AgentChat({ slug }: PageProps) {
             setMessages(parsed);
           } else {
             setMessages(parsed.messages || []);
-            if (parsed.threadId) setThreadId(parsed.threadId);
+            if (parsed.threadId && !disableThreadReuse) setThreadId(parsed.threadId);
           }
         } catch {
           setMessages([]);
@@ -195,7 +197,10 @@ export default function AgentChat({ slug }: PageProps) {
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
     if (messagesLoaded) {
-      localStorage.setItem(`chat_${id}`, JSON.stringify({ messages, threadId }));
+      localStorage.setItem(
+        `chat_${id}`,
+        JSON.stringify({ messages, threadId: disableThreadReuse ? null : threadId })
+      );
     }
   }, [messages, threadId, id, messagesLoaded]);
 
@@ -225,10 +230,13 @@ export default function AgentChat({ slug }: PageProps) {
 
     setLoading(true);
     try {
+      const body: any = { message: input, assistant_id: id };
+      if (!disableThreadReuse && threadId) body.thread_id = threadId;
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, assistant_id: id, thread_id: threadId }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json().catch(() => null);
@@ -236,7 +244,9 @@ export default function AgentChat({ slug }: PageProps) {
         throw new Error(data?.error || 'request failed');
       }
 
-      setThreadId(data.thread_id || threadId);
+      if (!disableThreadReuse) {
+        setThreadId(data.thread_id || threadId);
+      }
       setMessages(prev => [...prev, { role: 'user', content: input }, { role: data.role, content: data.content }]);
       setInput('');
     } catch (error: any) {

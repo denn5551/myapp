@@ -1,6 +1,8 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === 'true';
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -13,9 +15,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ error: 'Missing message or assistant_id' });
   }
 
-  let threadId = thread_id;
+  let threadId = disableThreadReuse ? null : thread_id;
   try {
-    console.log('Запрос к ассистенту', { assistant_id, thread_id, message });
+    console.log('Запрос к ассистенту', { assistant_id, thread_id: threadId, message });
 
     if (!threadId) {
       const threadRes = await fetch('https://api.openai.com/v1/threads', {
@@ -65,11 +67,25 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const run = await runRes.json();
-    console.log('▶️ Run запущен:', run);
+    console.log('▶️ Run запущен:', { id: run.id, status: run.status });
 
-    let status = 'queued';
+    if (run.status === 'failed') {
+      console.error('❌ Run failed to start', {
+        assistant_id,
+        thread_id: threadId,
+        status: run.status,
+        last_error: run.last_error,
+      });
+      return res.status(500).json({
+        error: 'assistant_unavailable',
+        details: run.last_error?.message || 'run failed to start',
+      });
+    }
+
+    let status = run.status;
+    let lastError = run.last_error;
     let attempts = 0;
-    while (status !== 'completed' && attempts < 20) {
+    while (status !== 'completed' && status !== 'failed' && attempts < 20) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const statusRes = await fetch(
         `https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`,
@@ -82,9 +98,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       );
       const statusData = await statusRes.json();
       status = statusData.status;
+      lastError = statusData.last_error;
       console.log(`⏳ Статус выполнения: ${status}`);
       attempts++;
     }
+
+    if (status !== 'completed') {
+      console.error('❌ Run завершился ошибкой', {
+        assistant_id,
+        thread_id: threadId,
+        status,
+        last_error: lastError,
+      });
+      return res.status(500).json({
+        error: 'assistant_unavailable',
+        details: lastError?.message || status,
+      });
+    }
+
+    console.log('✅ Run завершён', {
+      assistant_id,
+      thread_id: threadId,
+      status,
+    });
 
     const messagesRes = await fetch(
       `https://api.openai.com/v1/threads/${threadId}/messages`,
