@@ -9,12 +9,24 @@ beforeEach(() => {
 })
 
 test('returns agent data', async () => {
-  (getAgentBySlug as jest.Mock).mockResolvedValue({ assistantId: 'a1', name: 'A' })
+  ;(getAgentBySlug as jest.Mock).mockResolvedValue({
+    assistantId: 'a1',
+    name: 'A',
+    category: 'Cat',
+    description: 'Desc',
+  })
   const req = httpMocks.createRequest({ method: 'GET', query: { slug: 'agent' } })
   const res = httpMocks.createResponse()
   await handler(req, res)
   expect(res._getStatusCode()).toBe(200)
-  expect(res._getJSONData()).toEqual({ name: 'A', slug: 'agent', assistant_id: 'a1', isFavorite: false })
+  expect(res._getJSONData()).toEqual({
+    name: 'A',
+    slug: 'agent',
+    assistant_id: 'a1',
+    category: 'Cat',
+    description: 'Desc',
+    isFavorite: false,
+  })
 })
 
 test('404 when missing', async () => {
