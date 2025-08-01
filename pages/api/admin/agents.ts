@@ -42,6 +42,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db.close();
       return res.status(404).json({ message: 'Agent not found' });
     }
+
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        const verifyRes = await fetch(`https://api.openai.com/v1/assistants/${id}`, {
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2',
+          },
+        });
+        if (!verifyRes.ok) {
+          console.error('Assistant verification failed', {
+            assistant_id: id,
+            status: verifyRes.status,
+            statusText: verifyRes.statusText,
+          });
+        }
+      } catch (e) {
+        console.error('Assistant verification error', id, e);
+      }
+    }
     await db.run(
       `UPDATE agents SET name=?, short_description=?, description=?, category_id=?, display_on_main=? WHERE id=?`,
       [
