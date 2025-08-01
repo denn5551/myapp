@@ -1,3 +1,12 @@
+import baseSlugify from 'slugify'
+
+// Override default transliteration to match expected Russian mapping
+baseSlugify.extend({
+  'й': 'i',
+  'Й': 'I',
+})
+
 export function slugify(text: string): string {
-  return encodeURIComponent(text.toLowerCase().trim().replace(/\s+/g, "-"));
+  return baseSlugify(text, { lower: true, strict: true, locale: 'ru' })
 }
+

@@ -102,9 +102,10 @@ interface PageProps {
 
 export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
-  const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const id = agent?.assistantId || '';
+  const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const id = agent?.assistantId || ''
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
@@ -125,11 +126,17 @@ export default function AgentChat({ slug }: PageProps) {
         return res.json()
       })
       .then(data => {
+        if (!data.assistant_id) {
+          console.log('assistant_id отсутствует')
+          setErrorMsg('Ассистент не найден')
+          return
+        }
         setAgent({ assistantId: data.assistant_id, name: data.name })
         setAssistantName(data.name)
+        setIsFavorite(!!data.isFavorite)
       })
       .catch(err => {
-        console.error('Failed to load agent:', err)
+        console.error(`Ассистент не найден по slug: ${slug}`, err)
         setErrorMsg('Ассистент не найден')
       })
   }, [router.isReady, slug])
@@ -293,7 +300,7 @@ export default function AgentChat({ slug }: PageProps) {
             <button className="btn-clear-chat" onClick={handleClearChat}>
               Очистить чат
             </button>
-            <FavoriteButton agentId={id} />
+            <FavoriteButton agentId={id} initialIsFavorite={isFavorite} />
           </div>
           <div className="header__user" onClick={toggleUserMenu}>
             <span className="user-avatar">
@@ -312,69 +319,70 @@ export default function AgentChat({ slug }: PageProps) {
           </div>
         </header>
 
-        {errorMsg && (
+        {errorMsg ? (
           <div className="error-message">{errorMsg}</div>
-        )}
-        <div className="chat-container">
-          <div className="chat-messages">
-            {messages.length === 0 ? (
-              <div className="welcome-message">
-                <h3>Добро пожаловать в чат с {assistantName}!</h3>
-                <p>Начните разговор, написав ваше первое сообщение.</p>
+        ) : (
+          <div className="chat-container">
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div className="welcome-message">
+                  <h3>Добро пожаловать в чат с {assistantName}!</h3>
+                  <p>Начните разговор, написав ваше первое сообщение.</p>
+                </div>
+              ) : (
+                messages.map((msg, i) => (
+                  <div key={i} className={`message ${msg.role}`}>
+                    <div className="message-avatar">
+                      {msg.role === 'user' ? email.charAt(0).toUpperCase() : 'ИИ'}
+                    </div>
+                    <div className="message-content">
+                      <div className="message-author">
+                        {msg.role === 'user' ? 'Вы' : assistantName}
+                      </div>
+                      <div className="message-text">
+                        {formatMessageText(msg.content)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {subscriptionStatus === 'expired' ? (
+              <div className="chat-locked">
+                <div className="locked-message">
+                  <h3>🔒 Доступ к чату ограничен</h3>
+                  <p>Чтобы продолжить общение с ИИ-помощниками, оформите подписку.</p>
+                  <Link href="/subscribe" className="upgrade-button">
+                    Оформить подписку
+                  </Link>
+                </div>
               </div>
             ) : (
-              messages.map((msg, i) => (
-                <div key={i} className={`message ${msg.role}`}>
-                  <div className="message-avatar">
-                    {msg.role === 'user' ? email.charAt(0).toUpperCase() : 'ИИ'}
-                  </div>
-                  <div className="message-content">
-                    <div className="message-author">
-                      {msg.role === 'user' ? 'Вы' : assistantName}
-                    </div>
-                    <div className="message-text">
-                      {formatMessageText(msg.content)}
-                    </div>
-                  </div>
+              <div className="chat-input-container">
+                <div className="chat-input-wrapper">
+                  <textarea
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    className="chat-input"
+                    placeholder="Введите сообщение..."
+                    rows={1}
+                    disabled={loading}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={loading || !input.trim()}
+                    className="send-button"
+                  >
+                    {loading ? '⏳' : '↑'}
+                  </button>
                 </div>
-              ))
+              </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
-
-          {subscriptionStatus === 'expired' ? (
-            <div className="chat-locked">
-              <div className="locked-message">
-                <h3>🔒 Доступ к чату ограничен</h3>
-                <p>Чтобы продолжить общение с ИИ-помощниками, оформите подписку.</p>
-                <Link href="/subscribe" className="upgrade-button">
-                  Оформить подписку
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="chat-input-container">
-              <div className="chat-input-wrapper">
-                <textarea
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  className="chat-input"
-                  placeholder="Введите сообщение..."
-                  rows={1}
-                  disabled={loading}
-                />
-                <button 
-                  onClick={sendMessage} 
-                  disabled={loading || !input.trim()} 
-                  className="send-button"
-                >
-                  {loading ? '⏳' : '↑'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </main>
     </div>
   );

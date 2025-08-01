@@ -41,6 +41,8 @@ export default async function handler(
     name: agent.name,
     slug,
     assistant_id: agent.assistantId,
+    category: agent.category,
+    description: agent.description,
     isFavorite,
   })
 }

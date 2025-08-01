@@ -51,20 +51,28 @@ export default async function handler(
 
   if (req.method === "POST") {
     const { id, name, short, full, categoryId, slug, isActive, displayOnMain } =
-      req.body;
+      req.body
     if (!id) {
-      await db.close();
-      return res.status(400).json({ message: "Missing id" });
+      console.error('Invalid agent payload, missing id', req.body)
+      await db.close()
+      return res.status(400).json({ message: 'Missing id' })
     }
     if (!name) {
-      await db.close();
-      return res.status(400).json({ message: "Missing name" });
+      console.error('Invalid agent payload, missing name', req.body)
+      await db.close()
+      return res.status(400).json({ message: 'Missing name' })
     }
     if (!categoryId) {
-      await db.close();
-      return res.status(400).json({ message: "Missing categoryId" });
+      console.error('Invalid agent payload, missing categoryId', req.body)
+      await db.close()
+      return res.status(400).json({ message: 'Missing categoryId' })
     }
-    const slugValue = slug || slugify(name);
+    const slugValue = slug ? slugify(slug) : slugify(name)
+    if (!slugValue) {
+      console.error('Invalid agent payload, missing slug', req.body)
+      await db.close()
+      return res.status(400).json({ message: 'Missing slug' })
+    }
     try {
       await db.run(
         `INSERT INTO agents (id, name, description, short_description, category_id, slug, is_active, display_on_main, created_at)

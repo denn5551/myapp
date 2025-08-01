@@ -19,6 +19,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ error: 'Missing message or assistant_id' });
   }
 
+  let thread: any = null
   try {
     // Создаём thread
     const threadRes = await fetch('https://api.openai.com/v1/threads', {
@@ -30,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     });
 
-    const thread = await threadRes.json();
+    thread = await threadRes.json();
     console.log('✅ Thread создан:', thread.id);
 
     // Добавляем сообщение
@@ -96,8 +97,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     return res.status(200).json({ role: 'assistant', content: lastAssistantMessage.content[0].text.value });
   } catch (error: any) {
-    console.error('Ошибка OpenAI', error.response?.data || error.message || error);
-    return res.status(500).json({ error: 'assistant_unavailable' });
+    console.error('Ошибка OpenAI', error.response?.data || error.message || error, {
+      assistant_id,
+      message,
+      thread_id: thread?.id,
+    })
+    return res.status(500).json({ error: 'assistant_unavailable' })
   }
 };
 

@@ -12,9 +12,21 @@ beforeEach(() => {
 })
 
 test('fetches agent by slug', async () => {
-  mockDb.get.mockResolvedValue({ id: 'a1', name: 'A', description: 'd' })
+  mockDb.get.mockResolvedValue({
+    id: 'a1',
+    name: 'A',
+    description: 'd',
+    short_description: 's',
+    category_name: 'Cat',
+  })
   const agent = await getAgentBySlug('agent')
-  expect(agent).toEqual({ assistantId: 'a1', name: 'A', prompt: 'd' })
+  expect(agent).toEqual({
+    assistantId: 'a1',
+    name: 'A',
+    description: 'd',
+    short: 's',
+    category: 'Cat',
+  })
 })
 
 test('returns notFound for missing', async () => {
