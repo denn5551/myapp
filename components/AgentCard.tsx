@@ -4,15 +4,16 @@ import FavoriteButton from './FavoriteButton';
 
 interface Props {
   id: string;
+  slug: string;
   name: string;
   short_description: string;
 }
 
-export default function AgentCard({ id, name, short_description }: Props) {
+export default function AgentCard({ id, slug, name, short_description }: Props) {
   return (
     <div className="agent-card">
       <h4 className="agent-title">
-        <Link href={`/agents/${id}`}>{name}</Link>
+        <Link href={`/agents/${slug}`}>{name}</Link>
       </h4>
       <p className="agent-description">{short_description}</p>
       <FavoriteButton agentId={id} />

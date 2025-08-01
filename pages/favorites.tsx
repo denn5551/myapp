@@ -8,6 +8,7 @@ import { useSidebarState } from '@/hooks/useSidebarState'
 
 interface Agent {
   id: string
+  slug: string
   name: string
   short_description: string
 }
@@ -102,7 +103,7 @@ export default function FavoritesPage() {
         ) : (
           <div className="agents-grid">
             {favoriteAgents.map(agent => (
-              <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+              <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
                 <div className="agent-card">
                   <h4 className="agent-title">{agent.name}</h4>
                   <p className="agent-description">{agent.short_description}</p>

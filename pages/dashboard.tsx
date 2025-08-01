@@ -10,6 +10,7 @@ import { WelcomePopup } from '@/components/WelcomePopup';
 
 interface Agent {
   id: string;
+  slug: string;
   name: string;
   short_description: string;
   full_description?: string;
@@ -113,7 +114,7 @@ export default function Dashboard() {
           <h3 className="section-title">Популярные помощники</h3>
           <div className="agents-grid">
             {popularAgents.map(agent => (
-              <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card-link">
+              <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
                 <div className="agent-card">
                   <h4 className="agent-title">{agent.name}</h4>
                   <p className="agent-description">{agent.short_description}</p>
