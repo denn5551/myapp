@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import { useFavorites } from '@/hooks/useFavorites'
 import HeartIcon from './HeartIcon'
 
 interface Props {
@@ -7,36 +8,17 @@ interface Props {
 }
 
 export default function FavoriteButton({ agentId, initialIsFavorite = false }: Props) {
-  const [isFav, setIsFav] = useState(initialIsFavorite)
+  const { favorites, toggleFavorite } = useFavorites()
 
-  useEffect(() => {
-    setIsFav(initialIsFavorite)
-  }, [initialIsFavorite])
-
-  useEffect(() => {
-    if (initialIsFavorite) return
-    fetch('/api/users/me/favorites', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        const ids = (data.agents || []).map((a: any) => a.id)
-        setIsFav(ids.includes(agentId))
-      })
-      .catch(console.error)
-  }, [agentId, initialIsFavorite])
-
-  const toggle = async () => {
-    const method = isFav ? 'DELETE' : 'POST'
-    try {
-      await fetch(`/api/agents/by-id/${agentId}/favorite`, { method, credentials: 'include' })
-      setIsFav(f => !f)
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  const isFav = useMemo(() => {
+    if (favorites.length === 0) return initialIsFavorite
+    return favorites.some(f => f.id === agentId)
+  }, [favorites, agentId, initialIsFavorite])
 
   return (
-    <button className={`btn-heart ${isFav ? 'active' : ''}`} onClick={toggle}>
+    <button className={`btn-heart ${isFav ? 'active' : ''}`} onClick={() => toggleFavorite(agentId)}>
       <HeartIcon filled={isFav} />
     </button>
   )
 }
+
