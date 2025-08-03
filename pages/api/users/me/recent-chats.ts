@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     session.userId
   )
   const rows = await db.all(
-    `SELECT ur.chat_id AS id, a.name, ur.last_message_at as lastMessageAt
+    `SELECT ur.chat_id AS id, a.slug, a.name, ur.last_message_at as lastMessageAt
        FROM user_recent_chats ur
        JOIN agents a ON a.id = ur.chat_id
       WHERE ur.user_id = ?
