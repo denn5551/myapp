@@ -227,6 +227,14 @@ export default function AgentChat({ slug }: PageProps) {
     }
   };
 
+  const access = isSubscriptionValid(subscriptionStatus, subscriptionEnd);
+  console.log('DEBUG [Chat Access]:', {
+    status: subscriptionStatus,
+    subscriptionEnd,
+    now: new Date(),
+    access,
+  });
+
   async function sendMessage() {
     if (!input.trim() || !id) {
       if (!id) setErrorMsg('assistant_id отсутствует');
@@ -384,7 +392,7 @@ export default function AgentChat({ slug }: PageProps) {
               <div ref={messagesEndRef} />
             </div>
 
-            {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) ? (
+            {!access ? (
               <div className="chat-locked">
                 <div className="locked-message">
                   <h3>🔒 Подписка истекла</h3>
