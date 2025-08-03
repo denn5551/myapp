@@ -10,6 +10,10 @@ export default function FavoriteButton({ agentId, initialIsFavorite = false }: P
   const [isFav, setIsFav] = useState(initialIsFavorite)
 
   useEffect(() => {
+    setIsFav(initialIsFavorite)
+  }, [initialIsFavorite])
+
+  useEffect(() => {
     if (initialIsFavorite) return
     fetch('/api/users/me/favorites', { credentials: 'include' })
       .then(res => res.json())
