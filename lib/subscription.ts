@@ -2,8 +2,11 @@ export type SubscriptionStatus = 'trial' | 'active' | 'expired';
 
 export function isSubscriptionInvalid(
   status: SubscriptionStatus,
-  subscriptionEnd?: string
+  subscriptionEnd?: string | null
 ): boolean {
-  const isExpired = subscriptionEnd ? new Date(subscriptionEnd) < new Date() : false;
-  return status === 'expired' || status === 'trial' || (status === 'active' && isExpired);
+  if (status === 'expired') return true;
+  if (!subscriptionEnd) return true;
+  const normalizedEnd = new Date(subscriptionEnd);
+  normalizedEnd.setHours(23, 59, 59, 999);
+  return normalizedEnd.getTime() < Date.now();
 }
