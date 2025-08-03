@@ -1,9 +1,6 @@
 // pages/admin/users.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import Head from 'next/head';
-import AdminLayout from '@/components/AdminLayout';
-import Link from 'next/link';
-import clsx from 'clsx';
 
 interface User {
   id: number;
@@ -18,6 +15,8 @@ const initialUsers: User[] = [];
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState(initialUsers);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     fetch('/api/users')
@@ -84,6 +83,33 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleAddUser = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newEmail, password: newPassword })
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      const mapped: User = {
+        id: data.id,
+        email: data.email,
+        registeredAt: data.created_at,
+        subscriptionStatus: data.subscriptionStatus || 'trial',
+        subscriptionStart: data.subscriptionStart?.slice(0, 10) || '',
+        subscriptionEnd: data.subscriptionEnd?.slice(0, 10) || ''
+      };
+      setUsers(prev => [...prev, mapped]);
+      setNewEmail('');
+      setNewPassword('');
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка добавления пользователя');
+    }
+  };
+
   return (
     <>
       <Head>
@@ -144,6 +170,34 @@ export default function AdminUsersPage() {
           ))}
         </tbody>
       </table>
+      <form onSubmit={handleAddUser} className="mt-4 flex gap-2 items-end">
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">Email</label>
+          <input
+            type="email"
+            className="border rounded px-2 py-1 text-sm"
+            value={newEmail}
+            onChange={e => setNewEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">Пароль</label>
+          <input
+            type="password"
+            className="border rounded px-2 py-1 text-sm"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+        >
+          Добавить пользователя
+        </button>
+      </form>
     </>
   );
 }
