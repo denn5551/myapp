@@ -297,7 +297,7 @@ export default function AgentChat({ slug }: PageProps) {
     console.log('🗑️ Очистка чата: запрошено');
     if (!id) return;
     try {
-      const res = await fetch(`/api/agents/${id}/clear`, {
+      const res = await fetch(`/api/agents/by-id/${id}/clear`, {
         method: 'POST',
         credentials: 'include',
       });
