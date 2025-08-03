@@ -48,7 +48,7 @@ test('DELETE removes favorite', async () => {
 })
 
 test('GET returns favorites list', async () => {
-  mockDb.all.mockResolvedValueOnce([{ id: 'a1', name: 'Agent', short_description: '' }])
+  mockDb.all.mockResolvedValueOnce([{ id: 'a1', slug: 'agent', name: 'Agent', short_description: '' }])
   const req = httpMocks.createRequest({ method: 'GET' })
   const res = httpMocks.createResponse()
 
@@ -57,5 +57,6 @@ test('GET returns favorites list', async () => {
   expect(mockDb.all).toHaveBeenCalled()
   const data = res._getJSONData()
   expect(Array.isArray(data.agents)).toBe(true)
+  expect(data.agents[0].slug).toBe('agent')
 })
 

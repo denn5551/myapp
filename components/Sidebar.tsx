@@ -146,15 +146,9 @@ export default function Sidebar({
               <ul className="sidebar-menu">
                 {favorites.slice(0,5).map(a => (
                   <li key={a.id} className="sidebar-menu-item">
-                    {a.slug ? (
-                      <Link href={`/agents/${a.slug}`} className="sidebar-link">
-                        <span className="link-text">{a.name}</span>
-                      </Link>
-                    ) : (
-                      <span className="sidebar-link">
-                        <span className="link-text">{a.name}</span>
-                      </span>
-                    )}
+                    <Link href={`/agents/${a.slug}`} className="sidebar-link">
+                      <span className="link-text">{a.name}</span>
+                    </Link>
                   </li>
                 ))}
                 <li className="sidebar-menu-item active">

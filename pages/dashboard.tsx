@@ -114,19 +114,12 @@ export default function Dashboard() {
           <h3 className="section-title">Популярные помощники</h3>
           <div className="agents-grid">
             {popularAgents.map(agent => (
-              agent.slug ? (
-                <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
-                  <div className="agent-card">
-                    <h4 className="agent-title">{agent.name}</h4>
-                    <p className="agent-description">{agent.short_description}</p>
-                  </div>
-                </Link>
-              ) : (
-                <div key={agent.id} className="agent-card">
+              <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
+                <div className="agent-card">
                   <h4 className="agent-title">{agent.name}</h4>
                   <p className="agent-description">{agent.short_description}</p>
                 </div>
-              )
+              </Link>
             ))}
           </div>
         </section>

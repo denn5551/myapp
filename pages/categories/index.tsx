@@ -172,19 +172,12 @@ export default function AllCategories() {
               <h2 className="text-xl font-semibold mb-2">{category.name}</h2>
               <div className="agents-grid">
                 {category.agents.map(agent => (
-                  agent.slug ? (
-                    <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
-                      <div className="agent-card">
-                        <h4 className="agent-title">{agent.name}</h4>
-                        <p className="agent-description">{agent.short_description}</p>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div key={agent.id} className="agent-card">
+                  <Link key={agent.id} href={`/agents/${agent.slug}`} className="agent-card-link">
+                    <div className="agent-card">
                       <h4 className="agent-title">{agent.name}</h4>
                       <p className="agent-description">{agent.short_description}</p>
                     </div>
-                  )
+                  </Link>
                 ))}
               </div>
             </div>
