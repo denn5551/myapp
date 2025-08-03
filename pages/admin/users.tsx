@@ -27,29 +27,61 @@ export default function AdminUsersPage() {
           id: u.id,
           email: u.email,
           registeredAt: u.created_at,
-          subscriptionStatus: 'active',
-          subscriptionStart: u.created_at,
-          subscriptionEnd: u.created_at,
+          subscriptionStatus: u.subscriptionStatus || 'trial',
+          subscriptionStart: u.subscriptionStart?.slice(0, 10) || '',
+          subscriptionEnd: u.subscriptionEnd?.slice(0, 10) || '',
         }));
         setUsers(mapped);
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
-  const handleStatusChange = (id: number, newStatus: User['subscriptionStatus']) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === id ? { ...user, subscriptionStatus: newStatus } : user))
-    );
+  const handleStatusChange = async (id: number, email: string, newStatus: User['subscriptionStatus']) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    try {
+      const isoEnd = user.subscriptionEnd ? new Date(user.subscriptionEnd).toISOString() : null;
+      await fetch(`/api/users/${encodeURIComponent(email)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, subscriptionEnd: isoEnd })
+      });
+      setUsers(prev =>
+        prev.map(u => (u.id === id ? { ...u, subscriptionStatus: newStatus } : u))
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка обновления пользователя');
+    }
   };
 
-  const handleEndDateChange = (id: number, newDate: string) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === id ? { ...user, subscriptionEnd: newDate } : user))
-    );
+  const handleEndDateChange = async (id: number, email: string, newDate: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const iso = new Date(newDate).toISOString();
+    try {
+      await fetch(`/api/users/${encodeURIComponent(email)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: user.subscriptionStatus, subscriptionEnd: iso })
+      });
+      setUsers(prev =>
+        prev.map(u => (u.id === id ? { ...u, subscriptionEnd: newDate } : u))
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка обновления пользователя');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setUsers(prev => prev.filter(user => user.id !== id));
+  const handleDelete = async (id: number, email: string) => {
+    try {
+      await fetch(`/api/users/${encodeURIComponent(email)}`, { method: 'DELETE' });
+      setUsers(prev => prev.filter(user => user.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка удаления пользователя');
+    }
   };
 
   return (
@@ -79,7 +111,11 @@ export default function AdminUsersPage() {
                   className="border rounded px-2 py-1 text-sm"
                   value={user.subscriptionStatus}
                   onChange={e =>
-                    handleStatusChange(user.id, e.target.value as User['subscriptionStatus'])
+                    handleStatusChange(
+                      user.id,
+                      user.email,
+                      e.target.value as User['subscriptionStatus']
+                    )
                   }
                 >
                   <option value="trial">trial</option>
@@ -93,13 +129,13 @@ export default function AdminUsersPage() {
                   type="date"
                   className="border rounded px-2 py-1 text-sm"
                   value={user.subscriptionEnd}
-                  onChange={e => handleEndDateChange(user.id, e.target.value)}
+                  onChange={e => handleEndDateChange(user.id, user.email, e.target.value)}
                 />
               </td>
               <td className="border p-2">
                 <button
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                  onClick={() => handleDelete(user.id)}
+                  onClick={() => handleDelete(user.id, user.email)}
                 >
                   Удалить
                 </button>

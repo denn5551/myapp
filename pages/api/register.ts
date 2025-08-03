@@ -8,17 +8,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { email, password } = req.body;
   const db = await openDb();
 
-  await db.exec(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE,
-    password TEXT,
-    created_at TEXT
-  )`);
-
   const hashedPassword = await bcrypt.hash(password, 10);
+  const now = new Date();
+  const trialEnd = new Date(now);
+  trialEnd.setDate(trialEnd.getDate() + 7);
   try {
-    await db.run('INSERT INTO users (email, password, created_at) VALUES (?, ?, ?)',
-      [email, hashedPassword, new Date().toISOString()]);
+    await db.run(
+      'INSERT INTO users (email, password, status, subscription_start, subscription_end, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, 'trial', now.toISOString(), trialEnd.toISOString(), now.toISOString()]
+    );
     res.json({ message: 'Регистрация успешна' });
   } catch (e) {
     res.status(400).json({ message: 'Пользователь уже существует' });
