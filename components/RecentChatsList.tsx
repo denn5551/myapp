@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 
 interface Chat {
   id: string
+  slug: string
   name: string
   lastMessageAt: string
 }
@@ -55,7 +56,7 @@ export default function RecentChatsList() {
       <ul className="recent-chats-list" ref={listRef} style={{ overflowY: 'auto' }}>
         {chats.map(chat => (
           <li key={chat.id} className="recent-chat-item">
-            <Link href={`/agents/${chat.id}`}>
+            <Link href={`/agents/${chat.slug}`}>
               <div className="chat-title">{chat.name}</div>
               <div className="chat-date">{chat.lastMessageAt}</div>
             </Link>

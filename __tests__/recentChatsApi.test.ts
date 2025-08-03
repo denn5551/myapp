@@ -34,8 +34,8 @@ test('touch inserts or updates', async () => {
 test('recent list returns paginated result', async () => {
   mockDb.get.mockResolvedValueOnce({ count: 2 })
   mockDb.all.mockResolvedValueOnce([
-    { id: 'c1', name: 'A', lastMessageAt: '2025-07-15' },
-    { id: 'c2', name: 'B', lastMessageAt: '2025-07-14' }
+    { id: 'c1', slug: 'a', name: 'A', lastMessageAt: '2025-07-15' },
+    { id: 'c2', slug: 'b', name: 'B', lastMessageAt: '2025-07-14' }
   ])
   const req = httpMocks.createRequest({ method: 'GET', query: { page: '1', perPage: '2' } })
   const res = httpMocks.createResponse()
@@ -45,6 +45,7 @@ test('recent list returns paginated result', async () => {
   const data = res._getJSONData()
   expect(data.chats.length).toBe(2)
   expect(data.chats[0].name).toBe('A')
+  expect(data.chats[0].slug).toBe('a')
   expect(data.total).toBe(2)
   expect(data.page).toBe(1)
   expect(data.perPage).toBe(2)
