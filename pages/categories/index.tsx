@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
+import { isSubscriptionValid } from '@/lib/subscription';
 import Pagination from '@/components/Pagination';
 
 interface Agent {
@@ -31,6 +32,7 @@ export default function AllCategories() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'trial' | 'active' | 'expired'>('trial');
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string>('');
   const [categories, setCategories] = useState<CategoryWithAgents[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>([]);
 
@@ -68,6 +70,7 @@ export default function AllCategories() {
         } else {
           setEmail(data.email);
           setSubscriptionStatus(data.subscriptionStatus || 'expired');
+          if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd);
         }
       });
   }, []);
@@ -159,7 +162,7 @@ export default function AllCategories() {
         </header>
 
         <h1 className="section-title text-2xl font-bold mb-4">Все категории</h1>
-        {subscriptionStatus !== 'active' && (
+        {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) && (
           <div className="access-warning">
             <h3>🔓 Доступ ограничен</h3>
             <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>

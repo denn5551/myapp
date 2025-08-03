@@ -6,6 +6,25 @@ import { slugify } from './slugify'
 export async function openDb() {
   const dbPath = path.join(process.cwd(), 'data', 'users.db');
   const db = await open({ filename: dbPath, driver: sqlite3.Database });
+  await db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE,
+    password TEXT,
+    status TEXT DEFAULT 'trial',
+    subscription_start TEXT,
+    subscription_end TEXT,
+    created_at TEXT
+  )`)
+  const userCols = await db.all("PRAGMA table_info('users')")
+  if (!userCols.some(c => c.name === 'status')) {
+    await db.run("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'trial'")
+  }
+  if (!userCols.some(c => c.name === 'subscription_start')) {
+    await db.run("ALTER TABLE users ADD COLUMN subscription_start TEXT")
+  }
+  if (!userCols.some(c => c.name === 'subscription_end')) {
+    await db.run("ALTER TABLE users ADD COLUMN subscription_end TEXT")
+  }
   const cols = await db.all("PRAGMA table_info('agents')")
   const hasFlag = cols.some(c => c.name === 'display_on_main')
   if (!hasFlag) {

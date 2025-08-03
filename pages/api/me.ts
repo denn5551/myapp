@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { openDb } from '../../lib/db';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   if (req.headers.origin) {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
@@ -10,29 +11,27 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = req.headers.cookie || '';
   const emailCookie = cookies.split(';').find(c => c.trim().startsWith('email='));
   const decodedEmail = emailCookie ? decodeURIComponent(emailCookie.split('=')[1]) : null;
-  const hasPaid = cookies.includes('subscriptionPaid=true');
   if (!decodedEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const now = new Date();
-  const registered = new Date(); // Используем текущую дату как дату регистрации
-  const diffInDays = Math.floor((now.getTime() - registered.getTime()) / (1000 * 60 * 60 * 24));
+  const db = await openDb();
+  const user = await db.get(
+    `SELECT email, status as subscriptionStatus, subscription_end as subscriptionEnd FROM users WHERE email = ?`,
+    decodedEmail
+  );
+  await db.close();
 
-
-  let status: 'trial' | 'active' | 'expired' = 'expired';
-
-  if (hasPaid) {
-    status = 'active';
-  } else if (diffInDays < 3) {
-    status = 'trial';
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
   }
 
+  const isAdmin = decodedEmail === 'kcc-kem@ya.ru';
+
   res.status(200).json({
-    email: decodedEmail,
-    registeredAt: registered.toISOString(),
-    subscriptionStatus: status,
-    trialEndsIn: 3 - diffInDays,
-    isAdmin: decodedEmail === 'kcc-kem@ya.ru'
+    email: user.email,
+    subscriptionStatus: user.subscriptionStatus || 'expired',
+    subscriptionEnd: user.subscriptionEnd,
+    isAdmin,
   });
 }
