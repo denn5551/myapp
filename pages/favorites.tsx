@@ -5,7 +5,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSidebarState } from '@/hooks/useSidebarState'
-import { isSubscriptionInvalid } from '@/lib/subscription'
+import { isSubscriptionValid } from '@/lib/subscription'
 
 interface Agent {
   id: string
@@ -94,7 +94,7 @@ export default function FavoritesPage() {
           </div>
         </header>
 
-        {isSubscriptionInvalid(subscriptionStatus, subscriptionEnd) && (
+        {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) && (
           <div className="access-warning">
             <h3>🔓 Доступ ограничен</h3>
             <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>

@@ -12,6 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const now = new Date();
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 7);
+  trialEnd.setHours(23, 59, 59, 999);
   try {
     await db.run(
       'INSERT INTO users (email, password, status, subscription_start, subscription_end, created_at) VALUES (?, ?, ?, ?, ?, ?)',

@@ -22,11 +22,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const now = new Date();
+    const trialEnd = new Date(now);
+    trialEnd.setDate(trialEnd.getDate() + 7);
+    trialEnd.setHours(23, 59, 59, 999);
     try {
       await db.run(
         `INSERT INTO users (email, password, status, subscription_start, subscription_end, created_at)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [email, hashedPassword, 'active', now.toISOString(), null, now.toISOString()]
+        [email, hashedPassword, 'trial', now.toISOString(), trialEnd.toISOString(), now.toISOString()]
       );
       const user = await db.get(
         `SELECT id, email, created_at, status as subscriptionStatus,
