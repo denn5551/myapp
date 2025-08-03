@@ -1,4 +1,5 @@
-import favToggle from '../pages/api/agents/by-id/[id]/favorite'
+import addFav from '../pages/api/favorites/index'
+import removeFav from '../pages/api/favorites/[id]'
 import listFavs from '../pages/api/users/me/favorites'
 import httpMocks from 'node-mocks-http'
 import { openDb } from '../lib/db'
@@ -22,10 +23,10 @@ beforeEach(() => {
 })
 
 test('POST adds favorite', async () => {
-  const req = httpMocks.createRequest({ method: 'POST', query: { id: 'a1' } })
+  const req = httpMocks.createRequest({ method: 'POST', body: { agentId: 'a1' } })
   const res = httpMocks.createResponse()
 
-  await favToggle(req, res)
+  await addFav(req, res)
 
   expect(mockDb.run).toHaveBeenCalledWith(
     `INSERT OR IGNORE INTO user_favorite_agents(user_id, agent_id) VALUES(?, ?);`,
@@ -38,7 +39,7 @@ test('DELETE removes favorite', async () => {
   const req = httpMocks.createRequest({ method: 'DELETE', query: { id: 'a1' } })
   const res = httpMocks.createResponse()
 
-  await favToggle(req, res)
+  await removeFav(req, res)
 
   expect(mockDb.run).toHaveBeenCalledWith(
     `DELETE FROM user_favorite_agents WHERE user_id = ? AND agent_id = ?;`,
