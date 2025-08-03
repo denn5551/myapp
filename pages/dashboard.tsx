@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSidebarState } from '@/hooks/useSidebarState'
+import { isSubscriptionInvalid } from '@/lib/subscription'
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -21,6 +22,7 @@ interface Agent {
 export default function Dashboard() {
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string>('');
   const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [popularAgents, setPopularAgents] = useState<Agent[]>([]);
@@ -35,6 +37,7 @@ export default function Dashboard() {
         } else {
           setEmail(data.email);
           setSubscriptionStatus(data.subscriptionStatus || 'expired');
+          if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd);
         }
       });
   }, []);
@@ -98,16 +101,12 @@ export default function Dashboard() {
         </header>
         <div className="content-header">
           <h2>Добро пожаловать!</h2>
-          {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
+          {isSubscriptionInvalid(subscriptionStatus, subscriptionEnd) && (
             <div className="access-warning">
               <h3>🔓 Доступ ограничен</h3>
               <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
             </div>
           )}
-          
-          <Link href="/reset" className="reset-button">
-            🔁 Сбросить подписку
-          </Link>
         </div>
 
         <section className="content-section">

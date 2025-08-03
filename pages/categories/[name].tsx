@@ -8,6 +8,7 @@ import { useSidebarState } from '@/hooks/useSidebarState'
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
+import { isSubscriptionInvalid } from '@/lib/subscription';
 
 export default function AgentPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function AgentPage() {
 
   const [email, setEmail] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string>('');
   const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -100,6 +102,7 @@ useEffect(() => {
         } else {
           setEmail(data.email);
           setSubscriptionStatus(data.subscriptionStatus || 'expired');
+          if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd);
         }
       });
   }, []);
@@ -147,7 +150,7 @@ useEffect(() => {
         </header>
         <h1 className="section-title text-2xl font-bold mb-6">{categoryTitle}</h1>
 		
-		 {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
+                 {isSubscriptionInvalid(subscriptionStatus, subscriptionEnd) && (
             <div className="access-warning">
               <h3>🔓 Доступ ограничен</h3>
               <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
