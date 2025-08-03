@@ -177,7 +177,7 @@ export default function AgentChat({ slug }: PageProps) {
 
   // Загрузка истории сообщений из localStorage (только один раз)
   useEffect(() => {
-    if (router.isReady && !messagesLoaded) {
+    if (router.isReady && id && !messagesLoaded) {
       const saved = localStorage.getItem(`chat_${id}`);
       if (saved) {
         try {
