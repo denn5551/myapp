@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, ReactElement } from 'react';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import Link from 'next/link';
 import React from 'react';
+import { isSubscriptionValid } from '@/lib/subscription';
 
 import { GetServerSideProps } from 'next';
 import { getAgentBySlug } from '@/lib/getAgentBySlug';
@@ -120,6 +121,7 @@ export default function AgentChat({ slug }: PageProps) {
   const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string>('');
   const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -171,6 +173,7 @@ export default function AgentChat({ slug }: PageProps) {
         } else {
           setEmail(data.email);
           setSubscriptionStatus(data.subscriptionStatus || 'expired');
+          if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd);
         }
       });
   }, []);
@@ -223,6 +226,14 @@ export default function AgentChat({ slug }: PageProps) {
       console.error('Ошибка при выходе:', e);
     }
   };
+
+  const access = isSubscriptionValid(subscriptionStatus, subscriptionEnd);
+  console.log('DEBUG [Chat Access]:', {
+    status: subscriptionStatus,
+    subscriptionEnd,
+    now: new Date(),
+    access,
+  });
 
   async function sendMessage() {
     if (!input.trim() || !id) {
@@ -381,13 +392,13 @@ export default function AgentChat({ slug }: PageProps) {
               <div ref={messagesEndRef} />
             </div>
 
-            {subscriptionStatus === 'expired' ? (
+            {!access ? (
               <div className="chat-locked">
                 <div className="locked-message">
-                  <h3>🔒 Доступ к чату ограничен</h3>
-                  <p>Чтобы продолжить общение с ИИ-помощниками, оформите подписку.</p>
+                  <h3>🔒 Подписка истекла</h3>
+                  <p>Продлите подписку, чтобы продолжить общение с ИИ-помощниками.</p>
                   <Link href="/subscribe" className="upgrade-button">
-                    Оформить подписку
+                    Продлить подписку
                   </Link>
                 </div>
               </div>

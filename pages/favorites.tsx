@@ -5,6 +5,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSidebarState } from '@/hooks/useSidebarState'
+import { isSubscriptionValid } from '@/lib/subscription'
 
 interface Agent {
   id: string
@@ -16,6 +17,7 @@ interface Agent {
 export default function FavoritesPage() {
   const [email, setEmail] = useState('')
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active'|'trial'|'expired'>('trial')
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string>('')
   const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
@@ -32,6 +34,7 @@ export default function FavoritesPage() {
         } else {
           setEmail(data.email)
           setSubscriptionStatus(data.subscriptionStatus || 'expired')
+          if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd)
         }
       })
   }, [])
@@ -91,7 +94,7 @@ export default function FavoritesPage() {
           </div>
         </header>
 
-        {(subscriptionStatus === 'expired' || subscriptionStatus === 'trial') && (
+        {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) && (
           <div className="access-warning">
             <h3>🔓 Доступ ограничен</h3>
             <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
