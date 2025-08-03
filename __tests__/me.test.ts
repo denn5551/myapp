@@ -43,9 +43,47 @@ describe('me api', () => {
     expect(data.email).toBe('test@example.com');
     expect(data.subscriptionStatus).toBe('active');
     expect(data.subscriptionEnd).toBe(future.toISOString());
+    expect(data.isAdmin).toBe(false);
 
     const dbCleanup = await openDb();
     await dbCleanup.run('DELETE FROM users WHERE email = ?', 'test@example.com');
+    await dbCleanup.close();
+  });
+
+  it('marks admin user as admin', async () => {
+    const db = await openDb();
+    const now = new Date();
+    const future = new Date(now);
+    future.setDate(future.getDate() + 1);
+    await db.run(
+      'INSERT OR REPLACE INTO users (email, password, status, subscription_start, subscription_end, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [
+        'kcc-kem@ya.ru',
+        'hashed',
+        'active',
+        now.toISOString(),
+        future.toISOString(),
+        now.toISOString(),
+      ]
+    );
+    await db.close();
+
+    const req = httpMocks.createRequest({
+      method: 'GET',
+      headers: {
+        cookie: 'email=kcc-kem%40ya.ru'
+      }
+    });
+    const res = httpMocks.createResponse();
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const data = res._getJSONData();
+    expect(data.isAdmin).toBe(true);
+
+    const dbCleanup = await openDb();
+    await dbCleanup.run('DELETE FROM users WHERE email = ?', 'kcc-kem@ya.ru');
     await dbCleanup.close();
   });
 });
