@@ -65,6 +65,15 @@ export default function Dashboard() {
     }
   };
 
+  const subscriptionValid = isSubscriptionValid(subscriptionStatus, subscriptionEnd);
+  console.log('DEBUG [Dashboard]:', {
+    status: subscriptionStatus,
+    subscriptionEnd,
+    now: new Date(),
+    isSubscriptionValid: subscriptionValid,
+  });
+  const showBanner = subscriptionStatus === 'trial' || !subscriptionValid;
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar */}
@@ -101,7 +110,7 @@ export default function Dashboard() {
         </header>
         <div className="content-header">
           <h2>Добро пожаловать!</h2>
-          {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) && (
+          {showBanner && (
             <div className="access-warning">
               <h3>🔓 Доступ ограничен</h3>
               <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>
