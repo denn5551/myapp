@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSidebarState } from '@/hooks/useSidebarState'
-import { isSubscriptionInvalid } from '@/lib/subscription'
+import { isSubscriptionValid } from '@/lib/subscription'
 import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
@@ -101,7 +101,7 @@ export default function Dashboard() {
         </header>
         <div className="content-header">
           <h2>Добро пожаловать!</h2>
-          {isSubscriptionInvalid(subscriptionStatus, subscriptionEnd) && (
+          {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) && (
             <div className="access-warning">
               <h3>🔓 Доступ ограничен</h3>
               <p>Чтобы пользоваться всеми ИИ-помощниками без ограничений, оформите подписку.</p>

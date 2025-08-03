@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, ReactElement } from 'react';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import Link from 'next/link';
 import React from 'react';
-import { isSubscriptionInvalid } from '@/lib/subscription';
+import { isSubscriptionValid } from '@/lib/subscription';
 
 import { GetServerSideProps } from 'next';
 import { getAgentBySlug } from '@/lib/getAgentBySlug';
@@ -384,7 +384,7 @@ export default function AgentChat({ slug }: PageProps) {
               <div ref={messagesEndRef} />
             </div>
 
-            {isSubscriptionInvalid(subscriptionStatus, subscriptionEnd) ? (
+            {!isSubscriptionValid(subscriptionStatus, subscriptionEnd) ? (
               <div className="chat-locked">
                 <div className="locked-message">
                   <h3>🔒 Подписка истекла</h3>
