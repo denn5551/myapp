@@ -253,8 +253,7 @@ export default function AgentChat({ slug }: PageProps) {
         const uploadRes = await fetch('/api/chat/upload', { method: 'POST', body: formData });
         const uploadData = await uploadRes.json().catch(() => null);
         if (uploadRes.ok && uploadData?.url) {
-          const absoluteUrl = new URL(uploadData.url, window.location.origin).toString();
-          uploaded.push(absoluteUrl);
+          uploaded.push(uploadData.url);
         }
       }
 

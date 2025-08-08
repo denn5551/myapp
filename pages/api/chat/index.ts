@@ -48,7 +48,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const content: any[] = [{ type: 'input_text', text: message }];
     if (Array.isArray(attachments)) {
       for (const url of attachments) {
-        content.push({ type: 'input_text', text: `Attachment: ${url}` });
+        content.push({ type: 'input_image', image_url: { url } });
       }
     }
 
