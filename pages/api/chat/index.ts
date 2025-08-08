@@ -8,7 +8,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message, assistant_id, thread_id } = req.body;
+  const {
+    message,
+    assistant_id,
+    thread_id,
+    attachments = [],
+  } = req.body as {
+    message: string;
+    assistant_id: string;
+    thread_id?: string;
+    attachments?: string[];
+  };
 
   if (!message || !assistant_id) {
     if (!assistant_id) console.log('assistant_id отсутствует');
@@ -35,6 +45,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       console.log('ℹ️ Используем существующий thread:', threadId);
     }
 
+    const content: any[] = [{ type: 'input_text', text: message }];
+    if (Array.isArray(attachments)) {
+      for (const url of attachments) {
+        content.push({ type: 'input_text', text: `Attachment: ${url}` });
+      }
+    }
+
     await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
       headers: {
@@ -44,7 +61,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       },
       body: JSON.stringify({
         role: 'user',
-        content: message,
+        content,
       }),
     });
     console.log('✉️ Сообщение добавлено');
@@ -150,6 +167,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         role: 'assistant',
         content: 'Ассистент не дал ответа.',
         thread_id: threadId,
+        attachments,
       });
     }
 
@@ -157,6 +175,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       role: 'assistant',
       content: lastAssistantMessage.content[0].text.value,
       thread_id: threadId,
+      attachments,
     });
   } catch (error: any) {
     console.error('Ошибка OpenAI', error.response?.data || error.message || error, {

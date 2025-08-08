@@ -253,7 +253,8 @@ export default function AgentChat({ slug }: PageProps) {
         const uploadRes = await fetch('/api/chat/upload', { method: 'POST', body: formData });
         const uploadData = await uploadRes.json().catch(() => null);
         if (uploadRes.ok && uploadData?.url) {
-          uploaded.push(uploadData.url);
+          const absoluteUrl = new URL(uploadData.url, window.location.origin).toString();
+          uploaded.push(absoluteUrl);
         }
       }
 
@@ -280,7 +281,7 @@ export default function AgentChat({ slug }: PageProps) {
       }
       setMessages(prev => [
         ...prev,
-        { role: 'user', content: input, attachments: uploaded },
+        { role: 'user', content: input, attachments: data.attachments || uploaded },
         { role: data.role, content: data.content }
       ]);
       setInput('');
