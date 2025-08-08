@@ -158,10 +158,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     const messagesData = await messagesRes.json();
-    const lastAssistantMessage = messagesData.data
-      .slice()
-      .reverse()
-      .find((msg: any) => msg.role === 'assistant');
+    // API returns messages in descending order; take first assistant message without reversing
+    const lastAssistantMessage = messagesData.data.find(
+      (msg: any) => msg.role === 'assistant'
+    );
 
     if (!lastAssistantMessage) {
       return res.status(200).json({
