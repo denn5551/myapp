@@ -128,6 +128,14 @@ export default function AgentChat({ slug }: PageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+  // Reset chat state when switching agents
+  useEffect(() => {
+    setMessages([]);
+    setThreadId(null);
+    setAttachments([]);
+    setMessagesLoaded(false);
+  }, [id]);
+
   useEffect(() => {
     if (!router.isReady) return
     fetch(`/api/agents/${slug}`)
@@ -278,10 +286,14 @@ export default function AgentChat({ slug }: PageProps) {
       if (!disableThreadReuse) {
         setThreadId(data.thread_id || threadId);
       }
+      const assistantMsg: any = { role: data.role, content: data.content };
+      if (data.attachments && data.attachments.length) {
+        assistantMsg.attachments = data.attachments;
+      }
       setMessages(prev => [
         ...prev,
         { role: 'user', content: input, attachments: data.attachments || uploaded },
-        { role: data.role, content: data.content }
+        assistantMsg,
       ]);
       setInput('');
       setAttachments([]);
