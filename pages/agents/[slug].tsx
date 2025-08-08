@@ -124,6 +124,9 @@ export default function AgentChat({ slug }: PageProps) {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string>('');
   const { sidebarOpen, toggleSidebar } = useSidebarState()
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!router.isReady) return
@@ -236,14 +239,25 @@ export default function AgentChat({ slug }: PageProps) {
   });
 
   async function sendMessage() {
-    if (!input.trim() || !id) {
+    if (!id || (!input.trim() && attachments.length === 0)) {
       if (!id) setErrorMsg('assistant_id отсутствует');
       return;
     }
 
     setLoading(true);
     try {
-      const body: any = { message: input, assistant_id: id };
+      const uploaded: string[] = [];
+      for (const file of attachments) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadRes = await fetch('/api/chat/upload', { method: 'POST', body: formData });
+        const uploadData = await uploadRes.json().catch(() => null);
+        if (uploadRes.ok && uploadData?.url) {
+          uploaded.push(uploadData.url);
+        }
+      }
+
+      const body: any = { message: input, assistant_id: id, attachments: uploaded };
       if (!disableThreadReuse && threadId) body.thread_id = threadId;
 
       const res = await fetch('/api/chat', {
@@ -264,8 +278,13 @@ export default function AgentChat({ slug }: PageProps) {
       if (!disableThreadReuse) {
         setThreadId(data.thread_id || threadId);
       }
-      setMessages(prev => [...prev, { role: 'user', content: input }, { role: data.role, content: data.content }]);
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: input, attachments: uploaded },
+        { role: data.role, content: data.content }
+      ]);
       setInput('');
+      setAttachments([]);
       setErrorMsg(null);
       setErrorDetails(null);
     } catch (error: any) {
@@ -291,6 +310,47 @@ export default function AgentChat({ slug }: PageProps) {
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  };
+
+  const handleFiles = (files: FileList | File[]) => {
+    const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+    const newFiles: File[] = [];
+    Array.from(files).forEach(file => {
+      if (attachments.length + newFiles.length >= 5) return;
+      if (!allowed.includes(file.type)) return;
+      if (file.size > 5 * 1024 * 1024) return;
+      newFiles.push(file);
+    });
+    if (newFiles.length) {
+      setAttachments(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (e.clipboardData.files.length) {
+      e.preventDefault();
+      handleFiles(e.clipboardData.files);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFiles(e.target.files);
+      e.target.value = '';
+    }
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleClearChat = async () => {
@@ -385,6 +445,13 @@ export default function AgentChat({ slug }: PageProps) {
                       <div className="message-text">
                         {formatMessageText(msg.content)}
                       </div>
+                      {msg.attachments && (
+                        <div className="message-attachments">
+                          {msg.attachments.map((url: string, j: number) => (
+                            <img key={j} src={url} onClick={() => setLightboxImage(url)} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -403,20 +470,49 @@ export default function AgentChat({ slug }: PageProps) {
                 </div>
               </div>
             ) : (
-              <div className="chat-input-container">
+              <div
+                className="chat-input-container"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+              >
+                {attachments.length > 0 && (
+                  <div className="attachments-preview">
+                    {attachments.map((file, idx) => (
+                      <div key={idx} className="preview-item">
+                        <img src={URL.createObjectURL(file)} />
+                        <button onClick={() => removeAttachment(idx)}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="chat-input-wrapper">
                   <textarea
                     value={input}
                     onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
+                    onPaste={handlePaste}
                     className="chat-input"
                     placeholder="Введите сообщение..."
                     rows={1}
                     disabled={loading}
                   />
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    multiple
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  <button
+                    type="button"
+                    className="attach-button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                  >📎</button>
                   <button
                     onClick={sendMessage}
-                    disabled={loading || !input.trim()}
+                    disabled={loading || (!input.trim() && attachments.length === 0)}
                     className="send-button"
                   >
                     {loading ? '⏳' : '↑'}
@@ -427,6 +523,11 @@ export default function AgentChat({ slug }: PageProps) {
           </div>
         )}
       </main>
+      {lightboxImage && (
+        <div className="lightbox" onClick={() => setLightboxImage(null)}>
+          <img src={lightboxImage} />
+        </div>
+      )}
     </div>
   );
 }
