@@ -290,11 +290,18 @@ export default function AgentChat({ slug }: PageProps) {
       if (data.attachments && data.attachments.length) {
         assistantMsg.attachments = data.attachments;
       }
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', content: input, attachments: data.attachments || uploaded },
-        assistantMsg,
-      ]);
+
+      // Debug logs to track message history updates
+      console.log('Messages before update:', messages);
+      setMessages(prev => {
+        const updated = [
+          ...prev,
+          { role: 'user', content: input, attachments: uploaded },
+          assistantMsg,
+        ];
+        console.log('Messages after update:', updated);
+        return updated;
+      });
       setInput('');
       setAttachments([]);
       setErrorMsg(null);
