@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from '../../../lib/auth';
-import { openDb } from '../../../lib/db';
+import { openMainDb } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const db = await openDb();
+    const db = await openMainDb();
     
     const messages = await db.all(
       `SELECT role, text, attachments, created_at 

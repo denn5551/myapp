@@ -1,7 +1,7 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from '../../../lib/auth';
-import { openDb } from '../../../lib/db';
+import { openMainDb } from '../../../lib/db';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -45,8 +45,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   });
 
   try {
+    console.log('[CHAT DEBUG] Starting chat request');
+    
     // Получаем информацию об агенте
-    const db = await openDb();
+    const db = await openMainDb();
+    console.log('[CHAT DEBUG] Database opened');
     const agent = await db.get(
       'SELECT slug, name, description FROM agents WHERE id = ?',
       [agentId]
@@ -127,6 +130,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       role: 'user',
       content: userContent
     });
+
+    // Проверяем наличие API ключа
+    if (!process.env.OPENAI_API_KEY) {
+      await db.close();
+      return res.status(502).json({
+        error: 'openai_unavailable',
+        details: 'OpenAI API key not configured'
+      });
+    }
 
     // Вызываем OpenAI Chat Completions API
     const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
