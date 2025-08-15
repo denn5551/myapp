@@ -134,7 +134,28 @@ export default function AgentChat({ slug }: PageProps) {
     setThreadId(null);
     setAttachments([]);
     setMessagesLoaded(false);
+    loadChatHistory();
   }, [slug]);
+
+  // Загрузка истории чата из базы данных
+  const loadChatHistory = async () => {
+    if (!slug) return;
+    
+    try {
+      const res = await fetch(`/api/chat/history?agentSlug=${encodeURIComponent(slug)}`, {
+        credentials: 'include'
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages && Array.isArray(data.messages)) {
+          setMessages(data.messages);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    }
+  };
 
   useEffect(() => {
     if (!router.isReady) return
@@ -189,37 +210,13 @@ export default function AgentChat({ slug }: PageProps) {
       });
   }, []);
 
-  // Загрузка истории сообщений из localStorage (только один раз)
+  // Загрузка истории сообщений из базы данных
   useEffect(() => {
     if (router.isReady && slug && !messagesLoaded) {
-      console.log('[LOAD HISTORY]', slug);
-      const saved = localStorage.getItem(`chat_${slug}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setMessages(parsed);
-          } else {
-            setMessages(parsed.messages || []);
-            if (parsed.threadId && !disableThreadReuse) setThreadId(parsed.threadId);
-          }
-        } catch {
-          setMessages([]);
-        }
-      }
+      loadChatHistory();
       setMessagesLoaded(true);
     }
   }, [router.isReady, slug, messagesLoaded]);
-
-  // Сохранение сообщений при каждом изменении
-  useEffect(() => {
-    if (messagesLoaded) {
-      localStorage.setItem(
-        `chat_${slug}`,
-        JSON.stringify({ messages, threadId: disableThreadReuse ? null : threadId })
-      );
-    }
-  }, [messages, threadId, slug, messagesLoaded]);
 
 
 
@@ -266,45 +263,58 @@ export default function AgentChat({ slug }: PageProps) {
         }
       }
 
-      const body: any = { message: input, assistant_id: id, attachments: uploaded };
-      if (!disableThreadReuse && threadId) body.thread_id = threadId;
+      const body = { 
+        text: input.trim(), 
+        agentId: id, 
+        attachments: uploaded 
+      };
 
       console.log('[SEND]', { agentId: id, text: input, attachments: uploaded });
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok || data?.error) {
         console.error('Assistant response error', data);
-        setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
+        
+        // Обработка различных типов ошибок
+        if (data?.error === 'openai_error' || data?.error === 'openai_unavailable') {
+          setErrorMsg('Сервис временно недоступен. Попробуйте позже.');
+        } else if (data?.error === 'agent_not_found') {
+          setErrorMsg('Ассистент не найден.');
+        } else {
+          setErrorMsg('Произошла ошибка. Попробуйте позже.');
+        }
+        
         setErrorDetails(data?.details);
         setLoading(false);
         return;
       }
 
-      if (!disableThreadReuse) {
-        setThreadId(data.thread_id || threadId);
-      }
-      const assistantMsg: any = { role: data.role, content: data.content };
-      if (data.attachments && data.attachments.length) {
-        assistantMsg.attachments = data.attachments;
-      }
+      const assistantMsg = { 
+        role: data.role, 
+        content: data.content,
+        attachments: data.attachments || []
+      };
 
+      // Добавляем новые сообщения в конец массива
       setMessages(prev => [
         ...prev,
         { role: 'user', content: input, attachments: uploaded },
         assistantMsg,
       ]);
+      
       setInput('');
       setAttachments([]);
       setErrorMsg(null);
       setErrorDetails(null);
     } catch (error: any) {
       console.error('Ошибка при общении с ассистентом:', error);
-      setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
+      setErrorMsg('Произошла ошибка сети. Попробуйте позже.');
       setErrorDetails(error?.details || { message: error.message });
     }
     setLoading(false);

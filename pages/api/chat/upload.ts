@@ -24,6 +24,11 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Гарантируем существование каталога
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
   const form = formidable({
     maxFileSize: 5 * 1024 * 1024,
     filter: ({ mimetype }) => {
@@ -38,24 +43,39 @@ export default async function handler(
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
+    
     const ext = path.extname(file.originalFilename || '').toLowerCase();
-    const filename = `${Date.now()}${ext}`;
+    const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`;
     const finalPath = path.join(uploadDir, filename);
+    
+    // Копируем файл
     await fs.promises.copyFile(file.filepath, finalPath);
     await fs.promises.unlink(file.filepath);
-    const base =
-      process.env.PUBLIC_BASE_URL || `http://${req.headers.host}`;
-    const url = `${base}/uploads/${filename}`;
-    const exists = fs.existsSync(finalPath);
-    console.log('UPLOAD', { finalPath, url, exists });
-    if (!exists) {
+    
+    // Проверяем, что файл действительно сохранен
+    if (!fs.existsSync(finalPath)) {
+      console.error('File not saved after copy:', finalPath);
       return res.status(500).json({ error: 'save_failed' });
     }
+    
+    // Формируем абсолютный URL
+    const base = process.env.PUBLIC_BASE_URL || `http://${req.headers.host}`;
+    const url = `${base}/uploads/${filename}`;
+    
+    console.log('UPLOAD SUCCESS', { finalPath, url, size: fs.statSync(finalPath).size });
     return res.status(200).json({ url });
+    
   } catch (err: any) {
+    console.error('UPLOAD ERROR:', err);
+    
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File too large' });
     }
-    return res.status(400).json({ error: err.message || 'Upload error' });
+    
+    if (err.code === 'ENOSPC') {
+      return res.status(500).json({ error: 'Storage full' });
+    }
+    
+    return res.status(500).json({ error: 'Upload failed' });
   }
 }
