@@ -40,13 +40,18 @@ export default async function handler(
     }
     const ext = path.extname(file.originalFilename || '').toLowerCase();
     const filename = `${Date.now()}${ext}`;
-    const filepath = path.join(uploadDir, filename);
-    await fs.promises.copyFile(file.filepath, filepath);
+    const finalPath = path.join(uploadDir, filename);
+    await fs.promises.copyFile(file.filepath, finalPath);
     await fs.promises.unlink(file.filepath);
-    const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
-    const host = req.headers.host;
-    const absoluteUrl = `${protocol}://${host}/uploads/${filename}`;
-    return res.status(200).json({ url: absoluteUrl });
+    const base =
+      process.env.PUBLIC_BASE_URL || `http://${req.headers.host}`;
+    const url = `${base}/uploads/${filename}`;
+    const exists = fs.existsSync(finalPath);
+    console.log('UPLOAD', { finalPath, url, exists });
+    if (!exists) {
+      return res.status(500).json({ error: 'save_failed' });
+    }
+    return res.status(200).json({ url });
   } catch (err: any) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File too large' });

@@ -38,8 +38,8 @@ describe('chat api attachments', () => {
     expect(res._getStatusCode()).toBe(200)
     const postBody = JSON.parse(fetchMock.mock.calls[1][1].body)
     expect(postBody.content).toEqual([
-      { type: 'input_text', text: 'hi' },
-      { type: 'input_image', image_url: { url: 'https://example.com/a.png' } },
+      { type: 'text', text: 'hi' },
+      { type: 'image_url', image_url: { url: 'https://example.com/a.png' } },
     ])
     const data = JSON.parse(res._getData())
     expect(data.attachments).toEqual(['https://example.com/a.png'])
