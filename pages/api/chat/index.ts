@@ -1,195 +1,214 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-
-const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === 'true';
+import { getSession } from '../../../lib/auth';
+import { openDb } from '../../../lib/db';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const session = await getSession(req);
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const {
-    message,
-    assistant_id,
-    thread_id,
+    text,
+    agentId,
     attachments = [],
   } = req.body as {
-    message: string;
-    assistant_id: string;
-    thread_id?: string;
+    text?: string;
+    agentId: string;
     attachments?: string[];
   };
 
-  if (!message || !assistant_id) {
-    if (!assistant_id) console.log('assistant_id отсутствует');
-    return res.status(400).json({ error: 'Missing message or assistant_id' });
+  // Валидация входных данных
+  if (!agentId) {
+    return res.status(400).json({ error: 'Missing agentId' });
+  }
+  
+  if (!text && (!attachments || attachments.length === 0)) {
+    return res.status(400).json({ error: 'Missing text or attachments' });
   }
 
-  let threadId = disableThreadReuse ? null : thread_id;
-  const userId = (req as any).session?.userId || 'anonymous';
+  if (attachments && !Array.isArray(attachments)) {
+    return res.status(422).json({ error: 'Invalid attachments format' });
+  }
+
+  const userId = session.userId;
   console.log('[CHAT REQ]', {
     userId,
-    agentId: assistant_id,
-    threadId,
-    messagesLength: 1,
-    hasAttachments: Array.isArray(attachments) && attachments.length > 0,
+    agentId,
+    textLength: text?.length || 0,
+    attachmentsCount: attachments?.length || 0,
   });
-  try {
 
-    if (!threadId) {
-      const threadRes = await fetch('https://api.openai.com/v1/threads', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
-          'Content-Type': 'application/json',
-        },
-      });
-      const thread = await threadRes.json();
-      threadId = thread.id;
-      console.log('✅ Thread создан:', threadId);
-    } else {
-      console.log('ℹ️ Используем существующий thread:', threadId);
+  try {
+    // Получаем информацию об агенте
+    const db = await openDb();
+    const agent = await db.get(
+      'SELECT slug, name, description FROM agents WHERE id = ?',
+      [agentId]
+    );
+    
+    if (!agent) {
+      await db.close();
+      return res.status(404).json({ error: 'Agent not found' });
     }
 
-    const content: any[] = [{ type: 'text', text: message }];
-    if (Array.isArray(attachments)) {
-      for (const url of attachments) {
-        content.push({ type: 'image_url', image_url: { url } });
+    // Загружаем историю чата
+    const historyMessages = await db.all(
+      `SELECT role, text, attachments 
+       FROM chat_messages 
+       WHERE user_id = ? AND agent_slug = ? 
+       ORDER BY created_at ASC`,
+      [userId, agent.slug]
+    );
+
+    // Формируем сообщения для OpenAI
+    const messages: any[] = [];
+    
+    // Системное сообщение с описанием агента
+    if (agent.description) {
+      messages.push({
+        role: 'system',
+        content: agent.description
+      });
+    }
+
+    // История чата
+    for (const msg of historyMessages) {
+      const attachments = msg.attachments ? JSON.parse(msg.attachments) : [];
+      
+      if (attachments.length > 0) {
+        // Сообщение с изображениями
+        const content: any[] = [
+          { type: 'text', text: msg.text }
+        ];
+        
+        for (const url of attachments) {
+          content.push({
+            type: 'image_url',
+            image_url: { url }
+          });
+        }
+        
+        messages.push({
+          role: msg.role,
+          content
+        });
+      } else {
+        // Текстовое сообщение
+        messages.push({
+          role: msg.role,
+          content: msg.text
+        });
       }
     }
 
-    await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+    // Текущее сообщение пользователя
+    const userContent: any[] = [];
+    
+    if (text) {
+      userContent.push({ type: 'text', text });
+    }
+    
+    if (attachments && attachments.length > 0) {
+      for (const url of attachments) {
+        userContent.push({
+          type: 'image_url',
+          image_url: { url }
+        });
+      }
+    }
+
+    messages.push({
+      role: 'user',
+      content: userContent
+    });
+
+    // Вызываем OpenAI Chat Completions API
+    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        role: 'user',
-        content,
+        model,
+        messages,
+        max_tokens: 1000,
+        temperature: 0.7,
       }),
     });
-    console.log('✉️ Сообщение добавлено');
 
-    const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ assistant_id }),
-    });
-
-    if (!runRes.ok) {
-      console.error('❌ Run не запущен', {
-        assistant_id,
-        thread_id: threadId,
-        user_message: message,
-        status: runRes.status,
-        statusText: runRes.statusText,
+    if (!openaiResponse.ok) {
+      const errorData = await openaiResponse.json().catch(() => ({}));
+      console.error('[OPENAI ERROR]', {
+        status: openaiResponse.status,
+        statusText: openaiResponse.statusText,
+        error: errorData
       });
-      return res
-        .status(500)
-        .json({ error: 'assistant_unavailable', details: 'run failed to start' });
-    }
-
-    const run = await runRes.json();
-    console.log('▶️ Run запущен:', { id: run.id, status: run.status });
-
-    if (run.status === 'failed') {
-      console.error('Assistant run failed', {
-        assistant_id,
-        thread_id: threadId,
-        user_message: message,
-        run_status: run.status,
-        last_error: run.last_error,
-      });
-      return res.status(500).json({
-        error: 'assistant_unavailable',
-        details: run.last_error,
+      
+      await db.close();
+      return res.status(502).json({
+        error: 'openai_error',
+        details: errorData.error?.message || 'OpenAI API error'
       });
     }
 
-    let status = run.status;
-    let lastError = run.last_error;
-    let attempts = 0;
-    while (status !== 'completed' && status !== 'failed' && attempts < 20) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const statusRes = await fetch(
-        `https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2',
-          },
-        }
-      );
-      const statusData = await statusRes.json();
-      status = statusData.status;
-      lastError = statusData.last_error;
-      console.log(`⏳ Статус выполнения: ${status}`);
-      attempts++;
-    }
+    const openaiData = await openaiResponse.json();
+    const assistantMessage = openaiData.choices[0]?.message?.content || '';
 
-    if (status !== 'completed') {
-      console.error('Assistant run failed', {
-        assistant_id,
-        thread_id: threadId,
-        user_message: message,
-        run_status: status,
-        last_error: lastError,
-      });
-      return res.status(500).json({
-        error: 'assistant_unavailable',
-        details: lastError,
-      });
-    }
+    // Сохраняем сообщения в базу данных
+    const userText = text || '';
+    const userAttachments = JSON.stringify(attachments || []);
+    const assistantAttachments = JSON.stringify([]);
 
-    console.log('✅ Run завершён', {
-      assistant_id,
-      thread_id: threadId,
-      status,
-    });
-
-    const messagesRes = await fetch(
-      `https://api.openai.com/v1/threads/${threadId}/messages`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
-        },
-      }
+    await db.run(
+      `INSERT INTO chat_messages (user_id, agent_slug, role, text, attachments) 
+       VALUES (?, ?, 'user', ?, ?)`,
+      [userId, agent.slug, userText, userAttachments]
     );
 
-    const messagesData = await messagesRes.json();
-    // API returns messages in descending order; take first assistant message without reversing
-    const lastAssistantMessage = messagesData.data.find(
-      (msg: any) => msg.role === 'assistant'
+    await db.run(
+      `INSERT INTO chat_messages (user_id, agent_slug, role, text, attachments) 
+       VALUES (?, ?, 'assistant', ?, ?)`,
+      [userId, agent.slug, assistantMessage, assistantAttachments]
     );
 
-    if (!lastAssistantMessage) {
-      return res.status(200).json({
-        role: 'assistant',
-        content: 'Ассистент не дал ответа.',
-        thread_id: threadId,
-        attachments,
-      });
-    }
+    await db.close();
+
+    console.log('[CHAT SUCCESS]', {
+      userId,
+      agentId,
+      assistantMessageLength: assistantMessage.length
+    });
 
     return res.status(200).json({
       role: 'assistant',
-      content: lastAssistantMessage.content[0].text.value,
-      thread_id: threadId,
-      attachments,
+      content: assistantMessage,
+      attachments: []
     });
+
   } catch (error: any) {
     console.error('[CHAT ERROR]', error.stack || error);
-    return res.status(200).json({
-      errorId: 'assistant_unavailable',
-      message: error.message || 'assistant_unavailable',
+    
+    // Возвращаем осмысленную ошибку
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      return res.status(502).json({
+        error: 'openai_unavailable',
+        details: 'OpenAI service is temporarily unavailable'
+      });
+    }
+    
+    return res.status(500).json({
+      error: 'internal_error',
+      errorId: `chat_${Date.now()}`,
+      details: 'Internal server error'
     });
   }
 };
