@@ -41,3 +41,34 @@ export async function openDb() {
   }
   return db
 }
+
+export async function openMainDb() {
+  const dbPath = path.join(process.cwd(), 'data', 'database.sqlite');
+  const db = await open({ filename: dbPath, driver: sqlite3.Database });
+  
+  // Создаем таблицу chat_messages если её нет
+  await db.run(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      agent_slug TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+      text TEXT NOT NULL,
+      attachments TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  
+  // Создаем индексы
+  await db.run(`
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_user_agent 
+    ON chat_messages(user_id, agent_slug)
+  `);
+  
+  await db.run(`
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at 
+    ON chat_messages(created_at)
+  `);
+  
+  return db;
+}
