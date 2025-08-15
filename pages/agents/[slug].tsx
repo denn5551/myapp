@@ -134,7 +134,7 @@ export default function AgentChat({ slug }: PageProps) {
     setThreadId(null);
     setAttachments([]);
     setMessagesLoaded(false);
-  }, [id]);
+  }, [slug]);
 
   useEffect(() => {
     if (!router.isReady) return
@@ -191,8 +191,9 @@ export default function AgentChat({ slug }: PageProps) {
 
   // Загрузка истории сообщений из localStorage (только один раз)
   useEffect(() => {
-    if (router.isReady && id && !messagesLoaded) {
-      const saved = localStorage.getItem(`chat_${id}`);
+    if (router.isReady && slug && !messagesLoaded) {
+      console.log('[LOAD HISTORY]', slug);
+      const saved = localStorage.getItem(`chat_${slug}`);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -208,17 +209,17 @@ export default function AgentChat({ slug }: PageProps) {
       }
       setMessagesLoaded(true);
     }
-  }, [router.isReady, id, messagesLoaded]);
+  }, [router.isReady, slug, messagesLoaded]);
 
   // Сохранение сообщений при каждом изменении
   useEffect(() => {
     if (messagesLoaded) {
       localStorage.setItem(
-        `chat_${id}`,
+        `chat_${slug}`,
         JSON.stringify({ messages, threadId: disableThreadReuse ? null : threadId })
       );
     }
-  }, [messages, threadId, id, messagesLoaded]);
+  }, [messages, threadId, slug, messagesLoaded]);
 
 
 
@@ -268,6 +269,7 @@ export default function AgentChat({ slug }: PageProps) {
       const body: any = { message: input, assistant_id: id, attachments: uploaded };
       if (!disableThreadReuse && threadId) body.thread_id = threadId;
 
+      console.log('[SEND]', { agentId: id, text: input, attachments: uploaded });
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -291,17 +293,11 @@ export default function AgentChat({ slug }: PageProps) {
         assistantMsg.attachments = data.attachments;
       }
 
-      // Debug logs to track message history updates
-      console.log('Messages before update:', messages);
-      setMessages(prev => {
-        const updated = [
-          ...prev,
-          { role: 'user', content: input, attachments: uploaded },
-          assistantMsg,
-        ];
-        console.log('Messages after update:', updated);
-        return updated;
-      });
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: input, attachments: uploaded },
+        assistantMsg,
+      ]);
       setInput('');
       setAttachments([]);
       setErrorMsg(null);

@@ -26,8 +26,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   let threadId = disableThreadReuse ? null : thread_id;
+  const userId = (req as any).session?.userId || 'anonymous';
+  console.log('[CHAT REQ]', {
+    userId,
+    agentId: assistant_id,
+    threadId,
+    messagesLength: 1,
+    hasAttachments: Array.isArray(attachments) && attachments.length > 0,
+  });
   try {
-    console.log('Запрос к ассистенту', { assistant_id, thread_id: threadId, message });
 
     if (!threadId) {
       const threadRes = await fetch('https://api.openai.com/v1/threads', {
@@ -45,10 +52,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       console.log('ℹ️ Используем существующий thread:', threadId);
     }
 
-    const content: any[] = [{ type: 'input_text', text: message }];
+    const content: any[] = [{ type: 'text', text: message }];
     if (Array.isArray(attachments)) {
       for (const url of attachments) {
-        content.push({ type: 'input_image', image_url: { url } });
+        content.push({ type: 'image_url', image_url: { url } });
       }
     }
 
@@ -179,14 +186,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       attachments,
     });
   } catch (error: any) {
-    console.error('Ошибка OpenAI', error.response?.data || error.message || error, {
-      assistant_id,
-      message,
-      thread_id: threadId,
+    console.error('[CHAT ERROR]', error.stack || error);
+    return res.status(200).json({
+      errorId: 'assistant_unavailable',
+      message: error.message || 'assistant_unavailable',
     });
-    return res
-      .status(500)
-      .json({ error: 'assistant_unavailable', details: error.message });
   }
 };
 
