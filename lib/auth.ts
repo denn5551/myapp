@@ -10,5 +10,5 @@ export async function getSession(req: NextApiRequest) {
   const user = await db.get('SELECT id FROM users WHERE email = ?', email)
   await db.close()
   if (!user) return null
-  return { userId: user.id as number, email }
+  return { userId: user.id.toString(), email }
 }

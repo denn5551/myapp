@@ -18,6 +18,20 @@ CREATE TABLE IF NOT EXISTS agents (
   updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  agent_slug TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  text TEXT NOT NULL,
+  attachments TEXT, -- JSON array of URLs
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Индексы для быстрого поиска истории
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user_agent ON chat_messages(user_id, agent_slug);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
+
 -- Вставка категорий
 INSERT OR IGNORE INTO agent_categories (name, description) VALUES 
 ('Здоровье', 'Агенты для поддержания здоровья и wellness'),
