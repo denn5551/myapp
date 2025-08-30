@@ -12,6 +12,7 @@ import Sidebar from '@/components/Sidebar';
 import HamburgerIcon from '@/components/HamburgerIcon';
 import CloseIcon from '@/components/CloseIcon';
 import FavoriteButton from '@/components/FavoriteButton';
+import ChatInput from '@/components/chat/ChatInput';
 
 
 const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === 'true';
@@ -404,24 +405,28 @@ export default function AgentChat({ slug }: PageProps) {
               </div>
             ) : (
               <div className="chat-input-container">
-                <div className="chat-input-wrapper">
-                  <textarea
-                    value={input}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    className="chat-input"
-                    placeholder="Введите сообщение..."
-                    rows={1}
-                    disabled={loading}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={loading || !input.trim()}
-                    className="send-button"
-                  >
-                    {loading ? '⏳' : '↑'}
-                  </button>
-                </div>
+                <ChatInput
+                  threadId={threadId}
+                  assistantId={id}
+                  onMessageSent={(ok, newThreadId) => {
+                    if (ok) {
+                      if (newThreadId && !disableThreadReuse) {
+                        setThreadId(newThreadId);
+                      }
+                      // Clear input and reset loading state
+                      setInput('');
+                      setLoading(false);
+                      setErrorMsg(null);
+                      setErrorDetails(null);
+                      // Refresh messages to show the new conversation
+                      // The new API handles message storage, so we need to reload
+                      window.location.reload();
+                    } else {
+                      setLoading(false);
+                      setErrorMsg('Ошибка отправки сообщения');
+                    }
+                  }}
+                />
               </div>
             )}
           </div>
