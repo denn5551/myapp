@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcrypt';
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
+import { openDb } from '../../lib/db';
 import { serialize } from 'cookie';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).end();
 
   const { email, password } = req.body;
-  const db = await open({ filename: './data/users.db', driver: sqlite3.Database });
+  const db = await openDb();
 
   const user = await db.get('SELECT * FROM users WHERE email = ?', email);
   if (!user) return res.status(401).json({ message: 'Пользователь не найден', success: false });

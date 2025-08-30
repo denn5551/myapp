@@ -1,0 +1,23 @@
+.recent-chat-item .chat-title {
+  margin: 0;
+  font-size: 14px;
+  color: #6f7681;
+}
+
+.recent-chat-item .chat-date {
+  font-size: 0.675rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.sidebar-closed .recent-chats-section .link-text {
+  display: none;
+}
+
+.sidebar-closed .recent-chats-section .recent-chats-list {
+  display: none;
+}
+
+.sidebar-closed .recent-chats-section .accordion-arrow {
+  display: none;
+}

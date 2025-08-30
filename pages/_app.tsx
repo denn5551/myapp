@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import AdminLayout from '@/components/AdminLayout';
 import '@/styles/global.css';
+import '@/styles/sidebar.css';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();

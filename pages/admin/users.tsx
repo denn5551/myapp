@@ -1,9 +1,6 @@
 // pages/admin/users.tsx
-import { useState } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import Head from 'next/head';
-import AdminLayout from '@/components/AdminLayout';
-import Link from 'next/link';
-import clsx from 'clsx';
 
 interface User {
   id: number;
@@ -14,50 +11,103 @@ interface User {
   subscriptionEnd: string;
 }
 
-const initialUsers: User[] = [
-  {
-    id: 1,
-    email: 'user1@example.com',
-    registeredAt: '2025-06-10',
-    subscriptionStatus: 'trial',
-    subscriptionStart: '2025-06-10',
-    subscriptionEnd: '2025-06-13',
-  },
-  {
-    id: 2,
-    email: 'user2@example.com',
-    registeredAt: '2025-06-09',
-    subscriptionStatus: 'active',
-    subscriptionStart: '2025-06-09',
-    subscriptionEnd: '2025-07-09',
-  },
-  {
-    id: 3,
-    email: 'user3@example.com',
-    registeredAt: '2025-06-01',
-    subscriptionStatus: 'expired',
-    subscriptionStart: '2025-06-01',
-    subscriptionEnd: '2025-06-04',
-  },
-];
+const initialUsers: User[] = [];
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState(initialUsers);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
-  const handleStatusChange = (id: number, newStatus: User['subscriptionStatus']) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === id ? { ...user, subscriptionStatus: newStatus } : user))
-    );
+  useEffect(() => {
+    fetch('/api/users')
+      .then((r) => r.json())
+      .then((data) => {
+        const mapped = data.map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          registeredAt: u.created_at,
+          subscriptionStatus: u.subscriptionStatus || 'trial',
+          subscriptionStart: u.subscriptionStart?.slice(0, 10) || '',
+          subscriptionEnd: u.subscriptionEnd?.slice(0, 10) || '',
+        }));
+        setUsers(mapped);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const handleStatusChange = async (id: number, email: string, newStatus: User['subscriptionStatus']) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    try {
+      const isoEnd = user.subscriptionEnd ? new Date(user.subscriptionEnd).toISOString() : null;
+      await fetch(`/api/users/${encodeURIComponent(email)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, subscriptionEnd: isoEnd })
+      });
+      setUsers(prev =>
+        prev.map(u => (u.id === id ? { ...u, subscriptionStatus: newStatus } : u))
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка обновления пользователя');
+    }
   };
 
-  const handleEndDateChange = (id: number, newDate: string) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === id ? { ...user, subscriptionEnd: newDate } : user))
-    );
+  const handleEndDateChange = async (id: number, email: string, newDate: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const iso = new Date(newDate).toISOString();
+    try {
+      await fetch(`/api/users/${encodeURIComponent(email)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: user.subscriptionStatus, subscriptionEnd: iso })
+      });
+      setUsers(prev =>
+        prev.map(u => (u.id === id ? { ...u, subscriptionEnd: newDate } : u))
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка обновления пользователя');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setUsers(prev => prev.filter(user => user.id !== id));
+  const handleDelete = async (id: number, email: string) => {
+    try {
+      await fetch(`/api/users/${encodeURIComponent(email)}`, { method: 'DELETE' });
+      setUsers(prev => prev.filter(user => user.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка удаления пользователя');
+    }
+  };
+
+  const handleAddUser = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newEmail, password: newPassword })
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      const mapped: User = {
+        id: data.id,
+        email: data.email,
+        registeredAt: data.created_at,
+        subscriptionStatus: data.subscriptionStatus || 'trial',
+        subscriptionStart: data.subscriptionStart?.slice(0, 10) || '',
+        subscriptionEnd: data.subscriptionEnd?.slice(0, 10) || ''
+      };
+      setUsers(prev => [...prev, mapped]);
+      setNewEmail('');
+      setNewPassword('');
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка добавления пользователя');
+    }
   };
 
   return (
@@ -87,7 +137,11 @@ export default function AdminUsersPage() {
                   className="border rounded px-2 py-1 text-sm"
                   value={user.subscriptionStatus}
                   onChange={e =>
-                    handleStatusChange(user.id, e.target.value as User['subscriptionStatus'])
+                    handleStatusChange(
+                      user.id,
+                      user.email,
+                      e.target.value as User['subscriptionStatus']
+                    )
                   }
                 >
                   <option value="trial">trial</option>
@@ -101,13 +155,13 @@ export default function AdminUsersPage() {
                   type="date"
                   className="border rounded px-2 py-1 text-sm"
                   value={user.subscriptionEnd}
-                  onChange={e => handleEndDateChange(user.id, e.target.value)}
+                  onChange={e => handleEndDateChange(user.id, user.email, e.target.value)}
                 />
               </td>
               <td className="border p-2">
                 <button
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                  onClick={() => handleDelete(user.id)}
+                  onClick={() => handleDelete(user.id, user.email)}
                 >
                   Удалить
                 </button>
@@ -116,6 +170,34 @@ export default function AdminUsersPage() {
           ))}
         </tbody>
       </table>
+      <form onSubmit={handleAddUser} className="mt-4 flex gap-2 items-end">
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">Email</label>
+          <input
+            type="email"
+            className="border rounded px-2 py-1 text-sm"
+            value={newEmail}
+            onChange={e => setNewEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">Пароль</label>
+          <input
+            type="password"
+            className="border rounded px-2 py-1 text-sm"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+        >
+          Добавить пользователя
+        </button>
+      </form>
     </>
   );
 }
