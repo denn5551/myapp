@@ -1,5 +1,5 @@
 import { NextApiRequest } from 'next'
-import { openDb } from './db'
+import openDb from './db'
 
 export async function getSession(req: NextApiRequest) {
   const cookies = req.headers.cookie || ''

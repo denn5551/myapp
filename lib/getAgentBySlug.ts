@@ -1,4 +1,4 @@
-import { openDb } from './db'
+import openDb from './db'
 
 export async function getAgentBySlug(slug: string) {
   const db = await openDb()

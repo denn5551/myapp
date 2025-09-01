@@ -2,7 +2,7 @@ import addFav from '../pages/api/favorites/index'
 import removeFav from '../pages/api/favorites/[id]'
 import listFavs from '../pages/api/users/me/favorites'
 import httpMocks from 'node-mocks-http'
-import { openDb } from '../lib/db'
+import openDb from '../lib/db'
 import { getSession } from '../lib/auth'
 
 jest.mock('../lib/db')

@@ -1,5 +1,5 @@
 import { getAgentBySlug } from '../lib/getAgentBySlug'
-import { openDb } from '../lib/db'
+import openDb from '../lib/db'
 
 jest.mock('../lib/db')
 
