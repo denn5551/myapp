@@ -1,6 +1,6 @@
 import handler from '../pages/api/me';
 import httpMocks from 'node-mocks-http';
-import { openDb } from '../lib/db';
+import openDb from '../lib/db';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import path from 'path';

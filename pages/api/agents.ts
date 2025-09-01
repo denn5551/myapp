@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { openDb } from "../../lib/db";
+import openDb from "../../lib/db";
 import { slugify } from "../../lib/slugify";
 
 function mapAgent(row: any) {
