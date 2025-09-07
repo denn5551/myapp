@@ -68,11 +68,16 @@ const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const parts: any[] = [{ type: "text", text: textContent }];
 
     for (const f of attachments) {
-      // Use explicit public base URL if provided
-      const publicBase = (process.env.NEXT_PUBLIC_BASE_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
+      // Use explicit public base URL if provided; sanitize (no trailing slash)
+      const baseRaw = (process.env.NEXT_PUBLIC_BASE_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
+      const publicBase = (baseRaw || '').replace(/\/$/, '');
       if (f.isImage) {
-        const url = (f.url || '').trim();
-        const absUrl = url.startsWith('/') ? `${publicBase}${url}` : url;
+        let url = (f.url || '').trim();
+        // Next serves files from /public at root (no /public prefix)
+        url = url.replace(/^\/public\//, '/');
+        const absUrl = /^https?:\/\//i.test(url)
+          ? url
+          : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
         const isValidUrl = /^https?:\/\//i.test(absUrl);
         if (!isValidUrl) {
           console.warn('Skip image with invalid URL:', url, f);
@@ -80,8 +85,11 @@ const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
           parts.push({ type: "image_url", image_url: { url: absUrl } });
         }
       } else {
-        const url = (f.url || '').trim();
-        const absUrl = url.startsWith('/') ? `${publicBase}${url}` : url;
+        let url = (f.url || '').trim();
+        url = url.replace(/^\/public\//, '/');
+        const absUrl = /^https?:\/\//i.test(url)
+          ? url
+          : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
         parts[0].text += `\n[Файл: ${f.name}] ${absUrl}`;
       }
     }
