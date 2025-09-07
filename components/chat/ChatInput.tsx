@@ -69,9 +69,18 @@ const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
 
     for (const f of attachments) {
       if (f.isImage) {
-        parts.push({ type: "image_url", image_url: { url: f.url } });
+        const url = (f.url || '').trim();
+        const absUrl = url.startsWith('/') ? `${window.location.origin}${url}` : url;
+        const isValidUrl = /^https?:\/\//i.test(absUrl);
+        if (!isValidUrl) {
+          console.warn('Skip image with invalid URL:', url, f);
+        } else {
+          parts.push({ type: "image_url", image_url: { url: absUrl } });
+        }
       } else {
-        parts[0].text += `\n[Файл: ${f.name}] ${f.url}`;
+        const url = (f.url || '').trim();
+        const absUrl = url.startsWith('/') ? `${window.location.origin}${url}` : url;
+        parts[0].text += `\n[Файл: ${f.name}] ${absUrl}`;
       }
     }
 
