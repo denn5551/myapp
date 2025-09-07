@@ -408,24 +408,31 @@ export default function AgentChat({ slug }: PageProps) {
                 <ChatInput
                   threadId={threadId}
                   assistantId={id}
-                  onMessageSent={(ok, newThreadId) => {
-                    if (ok) {
-                      if (newThreadId && !disableThreadReuse) {
-                        setThreadId(newThreadId);
-                      }
-                      // Clear input and reset loading state
-                      setInput('');
-                      setLoading(false);
-                      setErrorMsg(null);
-                      setErrorDetails(null);
-                      // Refresh messages to show the new conversation
-                      // The new API handles message storage, so we need to reload
-                      window.location.reload();
-                    } else {
-                      setLoading(false);
-                      setErrorMsg('Ошибка отправки сообщения');
-                    }
-                  }}
+onMessageSent={(ok, newThreadId, response, userMessage) => {
+  console.log('onMessageSent called:', { ok, newThreadId, response, userMessage });
+  if (ok) {
+    if (newThreadId && !disableThreadReuse) {
+      setThreadId(newThreadId);
+    }
+    // Clear input and reset loading state
+    setInput('');
+    setLoading(false);
+    setErrorMsg(null);
+    setErrorDetails(null);
+    
+    // Добавляем сообщения в состояние
+    if (response && userMessage) {
+      console.log('Adding messages:', { userMessage, response });
+      setMessages(prev => [...prev, 
+        { role: 'user', content: userMessage }, 
+        { role: 'assistant', content: response }
+      ]);
+    }
+  } else {
+    setLoading(false);
+    setErrorMsg('Ошибка отправки сообщения');
+  }
+}}
                 />
               </div>
             )}

@@ -5,7 +5,7 @@ import { UploadedFile } from "./ChatAttachments";
 type Props = {
   threadId?: string;
   assistantId?: string;
-  onMessageSent?: (ok: boolean, threadId?: string) => void;
+ onMessageSent?: (ok: boolean, threadId?: string, response?: string, userMessage?: string) => void;
 };
 
 const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) => {
@@ -19,6 +19,44 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") void handleSend();
   };
+  
+ 
+const doUpload = async (files: File[]) => {
+  if (!files.length) return;
+  setError(null);
+  setBusy(true);
+  try {
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files[]", f));
+    const r = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data?.error || "Upload failed");
+    const next = [...attachments, ...data.files];
+    setAttachments(next);
+  } catch (e: any) {
+    setError(e?.message || "Ошибка загрузки");
+  } finally {
+    setBusy(false);
+  }
+};
+
+const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const items = e.clipboardData?.items;
+  if (!items?.length) return;
+  
+  const files: File[] = [];
+  for (const item of items as any) {
+    if (item.kind === "file") {
+      const file = item.getAsFile();
+      if (file) files.push(file);
+    }
+  }
+  
+  if (files.length) {
+    e.preventDefault();
+    await doUpload(files);
+  }
+};
 
   const handleSend = async () => {
     setError(null);
@@ -53,10 +91,11 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
         body: JSON.stringify(requestBody),
       });
       const data = await r.json();
+console.log('ChatInput API Response:', data);
       if (!r.ok || !data.ok) throw new Error(data?.error?.message || "Ошибка отправки");
       setText("");
       setAttachments([]);
-      onMessageSent?.(true, data.thread_id);
+onMessageSent?.(true, data.thread_id, data.message?.content, text);
     } catch (e: any) {
       setError(e?.message || "Не удалось отправить сообщение");
       onMessageSent?.(false);
@@ -67,14 +106,17 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
 
   return (
     <div className="w-full rounded-2xl border border-gray-200 p-3">
-      <textarea
-        className="min-h-[80px] w-full resize-y rounded-xl border border-gray-200 p-3 outline-none focus:border-gray-300"
-        placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
-        aria-label="Поле ввода сообщения"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+     
+<textarea
+  className="min-h-[80px] w-full resize-y rounded-xl border border-gray-200 p-3 outline-none focus:border-gray-300"
+  placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
+  aria-label="Поле ввода сообщения"
+  value={text}
+  onChange={(e) => setText(e.target.value)}
+  onKeyDown={handleKeyDown}
+  onPaste={handlePaste}
+/>
+
       <div className="mt-3">
         <ChatUploader onAttachmentsChange={handleAttachmentsChange} />
       </div>
