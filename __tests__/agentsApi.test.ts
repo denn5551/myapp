@@ -1,6 +1,6 @@
 import handler from '../pages/api/agents';
 import httpMocks from 'node-mocks-http';
-import { openDb } from '../lib/db';
+import openDb from '../lib/db';
 
 jest.mock('../lib/db');
 

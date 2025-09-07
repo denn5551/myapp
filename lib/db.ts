@@ -3,7 +3,7 @@ import sqlite3 from 'sqlite3'
 import path from 'path'
 import { slugify } from './slugify'
 
-export async function openDb() {
+async function openDb() {
   const dbPath = path.join(process.cwd(), 'data', 'users.db');
   const db = await open({ filename: dbPath, driver: sqlite3.Database });
   await db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -39,5 +39,21 @@ export async function openDb() {
   for (const row of missing) {
     await db.run('UPDATE agents SET slug=? WHERE id=?', slugify(row.name), row.id)
   }
+  
+  // Create UploadAsset table according to TZ
+  await db.run(`CREATE TABLE IF NOT EXISTS UploadAsset (
+    id        TEXT PRIMARY KEY,
+    url       TEXT NOT NULL,
+    name      TEXT NOT NULL,
+    size      INTEGER NOT NULL,
+    mime      TEXT NOT NULL,
+    isImage   INTEGER NOT NULL DEFAULT 0,
+    createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  )`)
+  
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_UploadAsset_createdAt ON UploadAsset(createdAt)`)
+  
   return db
 }
+
+export default openDb

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcrypt';
-import { openDb } from '../../lib/db';
+import openDb from '../../lib/db';
 import { serialize } from 'cookie';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

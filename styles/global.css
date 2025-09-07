@@ -1561,37 +1561,6 @@ footer.site-footer {
           margin: 0 auto;
         }
 
-        .attachments-preview {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          margin-bottom: 8px;
-        }
-
-        .attachments-preview .preview-item {
-          position: relative;
-        }
-
-        .attachments-preview img {
-          width: 60px;
-          height: 60px;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-
-        .attachments-preview button {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          background: rgba(0,0,0,0.6);
-          color: #fff;
-          border: none;
-          border-radius: 50%;
-          width: 16px;
-          height: 16px;
-          cursor: pointer;
-        }
-
         .chat-input {
           flex: 1;
           padding: 12px 16px;
@@ -1613,18 +1582,6 @@ footer.site-footer {
         .chat-input:disabled {
           background-color: #f9fafb;
           color: #6b7280;
-        }
-
-        .attach-button {
-          width: 44px;
-          height: 44px;
-          background-color: #e5e7eb;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          border: none;
         }
 
         .send-button {
@@ -1650,37 +1607,6 @@ footer.site-footer {
         .send-button:disabled {
           background-color: #d1d5db;
           cursor: not-allowed;
-        }
-
-        .message-attachments {
-          margin-top: 8px;
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .message-attachments img {
-          max-width: 150px;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-
-        .lightbox {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .lightbox img {
-          max-width: 90%;
-          max-height: 90%;
         }
 
         /* Responsive sidebar behavior */
