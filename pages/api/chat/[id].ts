@@ -124,6 +124,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
       });
 
       if (!runRes.ok) {
+        let bodyText = '';
+        try { bodyText = await runRes.text(); } catch {}
+        console.error('RUN START FAILED', {
+          status: runRes.status,
+          statusText: runRes.statusText,
+          body: bodyText,
+        });
         return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
       }
 
@@ -142,6 +149,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             'OpenAI-Beta': 'assistants=v2',
           },
         });
+        if (!statusRes.ok) {
+          let t = '';
+          try { t = await statusRes.text(); } catch {}
+          console.error('STATUS CHECK FAILED', statusRes.status, statusRes.statusText, t);
+          return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
+        }
         const statusData = await statusRes.json();
         status = statusData.status;
         attempts++;
@@ -179,6 +192,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
       });
     } catch (e) {
       const err = normalizeError(e);
+      try {
+        console.error('ASSISTANT ERROR', e?.response?.data || e?.message || String(e));
+      } catch {}
       return res.status(500).json({ ok: false, error: err });
     }
   }
