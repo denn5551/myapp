@@ -190,7 +190,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
         thread_id: threadId,
       });
-    } catch (e) {
+    } catch (e: any) {
       const err = normalizeError(e);
       try {
         console.error('ASSISTANT ERROR', e?.response?.data || e?.message || String(e));
