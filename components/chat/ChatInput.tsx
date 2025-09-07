@@ -5,7 +5,7 @@ import { UploadedFile } from "./ChatAttachments";
 type Props = {
   threadId?: string;
   assistantId?: string;
- onMessageSent?: (ok: boolean, threadId?: string, response?: string, userMessage?: string) => void;
+  onMessageSent?: (ok: boolean, threadId?: string, response?: string, userMessage?: string, parts?: any[]) => void;
 };
 
 const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) => {
@@ -91,11 +91,20 @@ const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         body: JSON.stringify(requestBody),
       });
       const data = await r.json();
-console.log('ChatInput API Response:', data);
+      console.log('ChatInput API Response:', data);
       if (!r.ok || !data.ok) throw new Error(data?.error?.message || "Ошибка отправки");
+      // Log sent image URLs for verification
+      try {
+        const imageUrls = parts
+          .filter((p: any) => p && p.type === "image_url" && p.image_url?.url)
+          .map((p: any) => p.image_url.url);
+        if (imageUrls.length) {
+          console.log("Sent image URLs:", imageUrls);
+        }
+      } catch {}
       setText("");
       setAttachments([]);
-onMessageSent?.(true, data.thread_id, data.message?.content, text);
+      onMessageSent?.(true, data.thread_id, data.message?.content, text, parts);
     } catch (e: any) {
       setError(e?.message || "Не удалось отправить сообщение");
       onMessageSent?.(false);

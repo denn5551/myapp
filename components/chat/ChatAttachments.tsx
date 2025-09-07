@@ -19,7 +19,7 @@ const ChatAttachments: React.FC<Props> = ({ items, onRemove }) => {
   if (!items.length) return null;
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="mt-2 flex flex-wrap gap-2" aria-label="Вложения">
       {items.map((f, idx) => (
         <div
           key={`${f.id}-${idx}`}
@@ -28,9 +28,9 @@ const ChatAttachments: React.FC<Props> = ({ items, onRemove }) => {
           aria-label={`Вложение ${f.name}`}
         >
           {f.isImage ? (
-            <img src={f.url} alt={f.name} className="h-10 w-10 rounded-md object-cover" loading="lazy" />
+            <img src={f.url} alt={f.name} className="h-14 w-14 rounded-md object-cover" loading="lazy" />
           ) : (
-            <div className="grid h-10 w-10 place-items-center rounded-md border bg-gray-50 text-xs">FILE</div>
+            <div className="grid h-14 w-14 place-items-center rounded-md border bg-gray-50 text-xs">FILE</div>
           )}
           <div className="min-w-0">
             <div className="truncate text-sm font-medium" title={f.name}>{f.name}</div>
