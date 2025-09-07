@@ -100,8 +100,14 @@ const ChatUploader: React.FC<Props> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onPaste={handlePaste}
-        className={`flex w-full items-center justify-between rounded-xl border p-3 text-sm outline-none transition ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white hover:bg-gray-50"}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-sm outline-none transition ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white hover:bg-gray-50"}`}
       >
+        <span aria-hidden className="shrink-0 text-gray-600">
+          {/* Paperclip icon */}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.2a2 2 0 1 1-2.83-2.83l8.49-8.49"/>
+          </svg>
+        </span>
         <span className="truncate">
           Перетащите файлы или <span className="underline">выберите</span>. Вставка скриншота — Ctrl/Cmd+V.
         </span>

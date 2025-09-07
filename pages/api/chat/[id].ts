@@ -81,19 +81,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         threadId = thread.id;
       }
 
-      // Convert messages to assistant format
+      // Convert messages to assistants v2 multimodal content
+      // Variant A: pass image URLs as input_image parts
       const lastMessage = body.messages[body.messages.length - 1];
-      let content = "";
-      
-      if (typeof lastMessage.content === "string") {
-        content = lastMessage.content;
+      const assistantContentParts: Array<any> = [];
+
+      if (typeof lastMessage.content === 'string') {
+        assistantContentParts.push({ type: 'input_text', text: lastMessage.content });
       } else if (Array.isArray(lastMessage.content)) {
-        // Convert parts to text for assistant API
-        content = lastMessage.content.map(part => {
-          if (part.type === "text") return part.text;
-          if (part.type === "image_url") return `[Изображение: ${part.image_url.url}]`;
-          return "";
-        }).join(" ");
+        for (const part of lastMessage.content as any[]) {
+          if (part?.type === 'text' && typeof part.text === 'string') {
+            assistantContentParts.push({ type: 'input_text', text: part.text });
+          } else if (part?.type === 'image_url' && part.image_url?.url) {
+            assistantContentParts.push({ type: 'input_image', image_url: { url: part.image_url.url } });
+          }
+        }
       }
 
       await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
@@ -105,7 +107,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
         body: JSON.stringify({
           role: 'user',
-          content: content,
+          content: assistantContentParts.length > 0
+            ? assistantContentParts
+            : [{ type: 'input_text', text: '' }],
         }),
       });
 

@@ -384,7 +384,21 @@ export default function AgentChat({ slug }: PageProps) {
                         {msg.role === 'user' ? 'Вы' : assistantName}
                       </div>
                       <div className="message-text">
-                        {formatMessageText(msg.content)}
+                        {Array.isArray((msg as any).parts) ? (
+                          <div className="flex flex-col gap-2">
+                            {(msg as any).parts.map((p: any, idx: number) => (
+                              p?.type === 'image_url' && p.image_url?.url ? (
+                                <img key={idx} src={p.image_url.url} alt="image" className="max-w-full rounded-lg" />
+                              ) : p?.type === 'text' ? (
+                                <div key={idx}>{formatMessageText(p.text)}</div>
+                              ) : (
+                                <div key={idx} />
+                              )
+                            ))}
+                          </div>
+                        ) : (
+                          formatMessageText(msg.content)
+                        )}
                       </div>
                     </div>
                   </div>
@@ -408,7 +422,7 @@ export default function AgentChat({ slug }: PageProps) {
                 <ChatInput
                   threadId={threadId}
                   assistantId={id}
-onMessageSent={(ok, newThreadId, response, userMessage) => {
+onMessageSent={(ok, newThreadId, response, userMessage, parts) => {
   console.log('onMessageSent called:', { ok, newThreadId, response, userMessage });
   if (ok) {
     if (newThreadId && !disableThreadReuse) {
@@ -421,12 +435,11 @@ onMessageSent={(ok, newThreadId, response, userMessage) => {
     setErrorDetails(null);
     
     // Добавляем сообщения в состояние
-    if (response && userMessage) {
+    if (userMessage || (Array.isArray(parts) && parts.length)) {
       console.log('Adding messages:', { userMessage, response });
-      setMessages(prev => [...prev, 
-        { role: 'user', content: userMessage }, 
-        { role: 'assistant', content: response }
-      ]);
+      const userEntry: any = { role: 'user', content: userMessage || '', parts };
+      const assistantEntry: any = { role: 'assistant', content: response || '' };
+      setMessages(prev => [...prev, userEntry, assistantEntry]);
     }
   } else {
     setLoading(false);
