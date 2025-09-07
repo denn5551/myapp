@@ -1,7 +1,7 @@
 import touchHandler from '../pages/api/chats/[id]/touch'
 import recentHandler from '../pages/api/users/me/recent-chats'
 import httpMocks from 'node-mocks-http'
-import { openDb } from '../lib/db'
+import openDb from '../lib/db'
 import { getSession } from '../lib/auth'
 
 jest.mock('../lib/db')
