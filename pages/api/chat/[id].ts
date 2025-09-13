@@ -65,10 +65,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
 
   // If assistant_id is provided, use assistant API
   if (body.assistant_id) {
+    console.log('Using assistant API with ID:', body.assistant_id);
     try {
       let threadId = disableThreadReuse ? undefined : body.thread_id;
       
       if (!threadId) {
+        console.log('Creating new thread...');
         const threadRes = await fetch('https://api.openai.com/v1/threads', {
           method: 'POST',
           headers: {
@@ -77,8 +79,26 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             'Content-Type': 'application/json',
           },
         });
-        const thread = await threadRes.json();
+        
+        if (!threadRes.ok) {
+          const t = await threadRes.text().catch(()=> '');
+          console.error('THREAD CREATE FAILED', threadRes.status, threadRes.statusText, t);
+          return res.status(500).json({ ok:false, error:{ message:'thread_create_failed' }});
+        }
+        
+        const thread = await threadRes.json().catch(async () => {
+          const t = await threadRes.text().catch(()=> '');
+          console.error('THREAD PARSE FAILED', t);
+          return null;
+        });
+        
+        if (!thread?.id) {
+          console.error('THREAD ID MISSING', thread);
+          return res.status(500).json({ ok:false, error:{ message:'thread_missing' }});
+        }
+        
         threadId = thread.id;
+        console.log('Thread created:', threadId);
       }
 
       // Convert messages to assistants v2 multimodal content
@@ -98,7 +118,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         }
       }
 
-      await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      console.log('Posting message to thread:', threadId, 'Content parts:', assistantContentParts.length);
+      const msgRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -112,6 +133,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             : [{ type: 'input_text', text: '' }],
         }),
       });
+      
+      if (!msgRes.ok) {
+        const t = await msgRes.text().catch(()=> '');
+        console.error('MESSAGE POST FAILED', msgRes.status, msgRes.statusText, t);
+        return res.status(500).json({ ok:false, error:{ message:'message_post_failed' }});
+      }
+      
+      console.log('Message posted successfully');
 
       const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
         method: 'POST',
