@@ -28,7 +28,7 @@ const ChatAttachments: React.FC<Props> = ({ items, onRemove }) => {
           aria-label={`Вложение ${f.name}`}
         >
           {f.isImage ? (
-            <img src={f.url} alt={f.name} className="h-10 w-10 rounded-md object-cover" loading="lazy" />
+            <img src={f.url} alt={f.name} className="h-10 w-10 rounded-md object-cover" loading="lazy" style={{width: '250px', height: 'auto'}} />
           ) : (
             <div className="grid h-10 w-10 place-items-center rounded-md border bg-gray-50 text-xs">FILE</div>
           )}
