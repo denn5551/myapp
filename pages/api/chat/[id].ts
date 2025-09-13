@@ -101,22 +101,37 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         console.log('Thread created:', threadId);
       }
 
-      // Convert messages to assistant format (like main branch)
+      // Convert messages to assistant format with multimodal support
       const lastMessage = body.messages[body.messages.length - 1];
-      let content = "";
+      let content: any;
       
       if (typeof lastMessage.content === "string") {
+        // Simple text message
         content = lastMessage.content;
       } else if (Array.isArray(lastMessage.content)) {
-        // Convert parts to text for assistant API
-        content = lastMessage.content.map(part => {
-          if (part.type === "text") return part.text;
-          if (part.type === "image_url") return `[Изображение: ${part.image_url.url}]`;
-          return "";
-        }).join(" ");
+        // Multimodal message - send as parts for images
+        const hasImages = lastMessage.content.some((part: any) => part.type === "image_url");
+        
+        if (hasImages) {
+          // Send as multimodal content for images
+          content = lastMessage.content.map((part: any) => {
+            if (part.type === "text") {
+              return { type: "input_text", text: part.text };
+            } else if (part.type === "image_url") {
+              return { type: "input_image", image_url: { url: part.image_url.url } };
+            }
+            return null;
+          }).filter(Boolean);
+        } else {
+          // No images, convert to text
+          content = lastMessage.content.map((part: any) => {
+            if (part.type === "text") return part.text;
+            return "";
+          }).join(" ");
+        }
       }
 
-      console.log('Posting message to thread:', threadId, 'Content:', content.substring(0, 100));
+      console.log('Posting message to thread:', threadId, 'Content type:', typeof content, 'Has images:', Array.isArray(content));
       const msgRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
         method: 'POST',
         headers: {
