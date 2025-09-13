@@ -422,7 +422,7 @@ export default function AgentChat({ slug }: PageProps) {
                 <ChatInput
                   threadId={threadId}
                   assistantId={id}
-onMessageSent={(ok, newThreadId, response, userMessage, parts) => {
+onMessageSent={(ok, newThreadId, response, userMessage) => {
   console.log('onMessageSent called:', { ok, newThreadId, response, userMessage });
   if (ok) {
     if (newThreadId && !disableThreadReuse) {
@@ -435,9 +435,9 @@ onMessageSent={(ok, newThreadId, response, userMessage, parts) => {
     setErrorDetails(null);
     
     // Добавляем сообщения в состояние
-    if (userMessage || (Array.isArray(parts) && parts.length)) {
+    if (userMessage || response) {
       console.log('Adding messages:', { userMessage, response });
-      const userEntry: any = { role: 'user', content: userMessage || '', parts };
+      const userEntry: any = { role: 'user', content: userMessage || '' };
       const assistantEntry: any = { role: 'assistant', content: response || '' };
       setMessages(prev => [...prev, userEntry, assistantEntry]);
     }

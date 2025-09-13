@@ -5,7 +5,7 @@ import { UploadedFile } from "./ChatAttachments";
 type Props = {
   threadId?: string;
   assistantId?: string;
-  onMessageSent?: (ok: boolean, threadId?: string, response?: string, userMessage?: string, parts?: any[]) => void;
+  onMessageSent?: (ok: boolean, threadId?: string, response?: string, userMessage?: string) => void;
 };
 
 const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) => {
@@ -74,38 +74,67 @@ const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!hasText && !hasFiles) return;
 
     let textContent = hasText ? text.trim() : "";
-    const parts: any[] = [{ type: "text", text: textContent }];
+    let messageContent: any;
+    
+    // Check if we have images
+    const hasImages = attachments.some(f => f.isImage);
+    
+    if (hasImages) {
+      // For messages with images, use parts structure
+      const parts: any[] = [{ type: "text", text: textContent || "" }];
 
-    for (const f of attachments) {
-      // Use explicit public base URL if provided; sanitize (no trailing slash)
-      const baseRaw = (process.env.NEXT_PUBLIC_BASE_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
-      const publicBase = (baseRaw || '').replace(/\/$/, '');
-      if (f.isImage) {
-        let url = (f.url || '').trim();
-        // Next serves files from /public at root (no /public prefix)
-        url = url.replace(/^\/public\//, '/');
-        const absUrl = /^https?:\/\//i.test(url)
-          ? url
-          : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
-        const isValidUrl = /^https?:\/\//i.test(absUrl);
-        if (!isValidUrl) {
-          console.warn('Skip image with invalid URL:', url, f);
+      for (const f of attachments) {
+        // Use explicit public base URL if provided; sanitize (no trailing slash)
+        const baseRaw = (process.env.NEXT_PUBLIC_BASE_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
+        const publicBase = (baseRaw || '').replace(/\/$/, '');
+        if (f.isImage) {
+          let url = (f.url || '').trim();
+          // Next serves files from /public at root (no /public prefix)
+          url = url.replace(/^\/public\//, '/');
+          const absUrl = /^https?:\/\//i.test(url)
+            ? url
+            : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
+          const isValidUrl = /^https?:\/\//i.test(absUrl);
+          if (!isValidUrl) {
+            console.warn('Skip image with invalid URL:', url, f);
+          } else {
+            parts.push({ type: "image_url", image_url: { url: absUrl } });
+          }
         } else {
-          parts.push({ type: "image_url", image_url: { url: absUrl } });
+          let url = (f.url || '').trim();
+          url = url.replace(/^\/public\//, '/');
+          const absUrl = /^https?:\/\//i.test(url)
+            ? url
+            : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
+          parts[0].text += `\n[Файл: ${f.name}] ${absUrl}`;
         }
-      } else {
-        let url = (f.url || '').trim();
-        url = url.replace(/^\/public\//, '/');
-        const absUrl = /^https?:\/\//i.test(url)
-          ? url
-          : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
-        parts[0].text += `\n[Файл: ${f.name}] ${absUrl}`;
       }
+      
+      messageContent = parts;
+    } else {
+      // For simple text messages, use string content
+      let content = textContent;
+      
+      // Add non-image file links to text
+      for (const f of attachments) {
+        if (!f.isImage) {
+          const baseRaw = (process.env.NEXT_PUBLIC_BASE_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
+          const publicBase = (baseRaw || '').replace(/\/$/, '');
+          let url = (f.url || '').trim();
+          url = url.replace(/^\/public\//, '/');
+          const absUrl = /^https?:\/\//i.test(url)
+            ? url
+            : (url.startsWith('/') ? `${publicBase}${url}` : `${publicBase}/${url}`);
+          content += `\n[Файл: ${f.name}] ${absUrl}`;
+        }
+      }
+      
+      messageContent = content || " ";
     }
 
     setBusy(true);
     try {
-      const requestBody: any = { messages: [{ role: "user", content: parts }] };
+      const requestBody: any = { messages: [{ role: "user", content: messageContent }] };
       
       // Use assistant API if assistantId is provided
       if (assistantId) {
@@ -122,17 +151,12 @@ const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       console.log('ChatInput API Response:', data);
       if (!r.ok || !data.ok) throw new Error(data?.error?.message || "Ошибка отправки");
       // Log sent image URLs for verification
-      try {
-        const imageUrls = parts
-          .filter((p: any) => p && p.type === "image_url" && p.image_url?.url)
-          .map((p: any) => p.image_url.url);
-        if (imageUrls.length) {
-          console.log("Sent image URLs:", imageUrls);
-        }
-      } catch {}
+      if (hasImages) {
+        console.log("Sent message with images");
+      }
       setText("");
       setAttachments([]);
-      onMessageSent?.(true, data.thread_id, data.message?.content, text, parts);
+      onMessageSent?.(true, data.thread_id, data.message?.content, text);
     } catch (e: any) {
       setError(e?.message || "Не удалось отправить сообщение");
       onMessageSent?.(false);
