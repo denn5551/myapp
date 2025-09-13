@@ -388,7 +388,7 @@ export default function AgentChat({ slug }: PageProps) {
                           <div className="flex flex-col gap-2">
                             {(msg as any).parts.map((p: any, idx: number) => (
                               p?.type === 'image_url' && p.image_url?.url ? (
-                                <img key={idx} src={p.image_url.url} alt="image" className="max-w-full rounded-lg" />
+                                <img key={idx} src={p.image_url.url} alt="image" className="max-w-xs max-h-48 rounded-lg object-cover" />
                               ) : p?.type === 'text' ? (
                                 <div key={idx}>{formatMessageText(p.text)}</div>
                               ) : (

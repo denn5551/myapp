@@ -41,19 +41,28 @@ const doUpload = async (files: File[]) => {
 };
 
 const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  console.log('Paste event triggered');
   const items = e.clipboardData?.items;
+  console.log('Clipboard items:', items?.length || 0);
+  
   if (!items?.length) return;
   
   const files: File[] = [];
   for (const item of items as any) {
+    console.log('Item kind:', item.kind, 'type:', item.type);
     if (item.kind === "file") {
       const file = item.getAsFile();
-      if (file) files.push(file);
+      if (file) {
+        console.log('Found file:', file.name, file.type, file.size);
+        files.push(file);
+      }
     }
   }
   
+  console.log('Files to upload:', files.length);
   if (files.length) {
     e.preventDefault();
+    console.log('Starting upload...');
     await doUpload(files);
   }
 };
