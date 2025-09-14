@@ -26,8 +26,6 @@ type OkPayload = {
   debug?: any;
 };
 
-const SAFE_ERROR_STATUS = 200; // чтобы фронт не падал на 5xx
-
 const isContentValid = (c: unknown): c is Content => {
   if (typeof c === "string") return true;
   if (!Array.isArray(c)) return false;
@@ -56,7 +54,6 @@ const normalizeError = (e: any) => {
 };
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === "true";
 
 // --- helpers ---------------------------------------------------------------
@@ -120,25 +117,40 @@ const pickLatestAssistantMessage = (messagesData: any) => {
 };
 // ---------------------------------------------------------------------------
 
+async function chatCompletionsFallback(body: ChatRequestBody) {
+  const model = (body.model || "gpt-4o-mini").trim();
+  const temperature = Number.isFinite(body.temperature) ? body.temperature! : 0.7;
+  const max_tokens = Number.isFinite(body.maxTokens) ? Math.max(1, Math.floor(body.maxTokens!)) : 1024;
+
+  const completion = await client.chat.completions.create({
+    model,
+    temperature,
+    max_tokens,
+    messages: body.messages as any,
+  });
+  const choice = completion.choices?.[0]?.message;
+  const role = (choice?.role as Role) ?? "assistant";
+  const content = (choice?.content as Content) ?? "";
+  return { role, content };
+}
+
 const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | ErrorPayload>) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: { message: "Method Not Allowed" } });
+    return res.status(200).json({ ok: false, error: { message: "Method Not Allowed" } });
   }
 
   const body: ChatRequestBody | undefined = req.body;
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return res
-      .status(SAFE_ERROR_STATUS)
+      .status(200)
       .json({ ok: false, error: { message: "Invalid body: expected { messages: ChatMessage[] }" } });
   }
   if (!body.messages.every(isMessageValid)) {
-    return res
-      .status(SAFE_ERROR_STATUS)
-      .json({ ok: false, error: { message: "Invalid message schema (roles or content parts)" } });
+    return res.status(200).json({ ok: false, error: { message: "Invalid message schema (roles or content parts)" } });
   }
 
-  // ---------------- Assistants v2 ----------------
+  // ---------------- Assistants v2 (с фолбэком) ----------------
   if (body.assistant_id) {
     try {
       let threadId = disableThreadReuse ? undefined : body.thread_id;
@@ -154,12 +166,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
           },
         });
         const threadText = await threadRes.text();
-        if (!threadRes.ok) {
-          return res.status(SAFE_ERROR_STATUS).json({
-            ok: false,
-            error: { message: "thread_create_failed", detail: threadText },
-          });
-        }
+        if (!threadRes.ok) throw new Error(`thread_create_failed: ${threadText}`);
         const thread = JSON.parse(threadText);
         threadId = thread.id;
       }
@@ -178,36 +185,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         body: JSON.stringify({ role: "user", content: contentParts }),
       });
       const msgText = await msgRes.text();
-      if (!msgRes.ok) {
-        return res.status(SAFE_ERROR_STATUS).json({
-          ok: false,
-          error: { message: "message_create_failed", detail: msgText },
-        });
-      }
-      const createdMessage = JSON.parse(msgText);
-
-      // 2.1) Верифицируем, что сообщение действительно в треде
-      const verifyRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?order=desc&limit=5`, {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "OpenAI-Beta": "assistants=v2",
-        },
-      });
-      const verifyText = await verifyRes.text();
-      if (!verifyRes.ok) {
-        return res.status(SAFE_ERROR_STATUS).json({
-          ok: false,
-          error: { message: "messages_verify_failed", detail: verifyText },
-        });
-      }
-      const verifyData = JSON.parse(verifyText);
-      const hasUser = (verifyData?.data || []).some((m: any) => m.id === createdMessage.id || m.role === "user");
-      if (!hasUser) {
-        return res.status(SAFE_ERROR_STATUS).json({
-          ok: false,
-          error: { message: "message_not_in_thread", detail: { createdMessage, verifySample: verifyData?.data } },
-        });
-      }
+      if (!msgRes.ok) throw new Error(`message_create_failed: ${msgText}`);
 
       // 3) Запускаем ран
       const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
@@ -220,16 +198,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         body: JSON.stringify({ assistant_id: body.assistant_id }),
       });
       const runText = await runRes.text();
-      if (!runRes.ok) {
-        return res.status(SAFE_ERROR_STATUS).json({
-          ok: false,
-          error: { message: "run_create_failed", detail: runText },
-        });
-      }
+      if (!runRes.ok) throw new Error(`run_create_failed: ${runText}`);
       const run = JSON.parse(runText);
-      if (run.status === "failed") {
-        return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: { message: "assistant_unavailable" } });
-      }
+      if (run.status === "failed") throw new Error("assistant_unavailable");
 
       // 4) Ожидаем завершение
       let status = run.status;
@@ -246,14 +217,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         status = statusData.status;
         attempts++;
       }
-      if (status !== "completed") {
-        return res.status(SAFE_ERROR_STATUS).json({
-          ok: false,
-          error: { message: "assistant_status", detail: status },
-        });
-      }
+      if (status !== "completed") throw new Error(`assistant_status: ${status}`);
 
-      // 5) Забираем последние сообщения и берём самый новый ответ ассистента
+      // 5) Забираем последний ответ ассистента
       const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?order=desc&limit=20`, {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -261,59 +227,47 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
       });
       const messagesText = await messagesRes.text();
-      if (!messagesRes.ok) {
-        return res.status(SAFE_ERROR_STATUS).json({
-          ok: false,
-          error: { message: "messages_fetch_failed", detail: messagesText },
-        });
-      }
+      if (!messagesRes.ok) throw new Error(`messages_fetch_failed: ${messagesText}`);
       const messagesData = JSON.parse(messagesText);
       const lastAssistantMessage = pickLatestAssistantMessage(messagesData);
 
-      if (!lastAssistantMessage) {
-        return res.status(200).json({
-          ok: true,
-          message: { role: "assistant", content: "Ассистент не дал ответа." },
-          thread_id: threadId,
-          debug: body.debug ? { contentParts, createdMessage, messagesSample: messagesData?.data?.slice(0, 3) } : undefined,
-        });
-      }
+      const content =
+        lastAssistantMessage?.content?.[0]?.text?.value ??
+        "Ассистент не дал ответа.";
 
       return res.status(200).json({
         ok: true,
-        message: { role: "assistant", content: lastAssistantMessage.content?.[0]?.text?.value ?? "" },
+        message: { role: "assistant", content },
         thread_id: threadId,
-        debug: body.debug ? { contentParts, lastAssistantId: lastAssistantMessage.id } : undefined,
+        debug: body.debug ? { contentParts } : undefined,
       });
-    } catch (e) {
-      const err = normalizeError(e);
-      return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: err });
+    } catch (e: any) {
+      // ФОЛБЭК НА CHAT COMPLETIONS — чтобы UI отвечал
+      const err = e instanceof Error ? e.message : String(e);
+      try {
+        const fallback = await chatCompletionsFallback(body);
+        return res.status(200).json({
+          ok: true,
+          message: fallback,
+          debug: body.debug ? { fallbackFrom: err } : undefined,
+        });
+      } catch (e2: any) {
+        const err2 = normalizeError(e2);
+        return res.status(200).json({
+          ok: false,
+          error: { message: "assistants_and_fallback_failed", detail: { assistantsError: err, fallbackError: err2 } },
+        });
+      }
     }
   }
 
-  // ---------------- Chat Completions fallback ----------------
-  const model = (body.model || "gpt-4o-mini").trim();
-  const temperature = Number.isFinite(body.temperature) ? body.temperature! : 0.7;
-  const max_tokens = Number.isFinite(body.maxTokens) ? Math.max(1, Math.floor(body.maxTokens!)) : 1024;
-
+  // ---------------- Чистый Chat Completions ----------------
   try {
-    const completion = await client.chat.completions.create({
-      model,
-      temperature,
-      max_tokens,
-      messages: body.messages as any,
-    });
-    const choice = completion.choices?.[0]?.message;
-    if (!choice) {
-      return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: { message: "Empty response from OpenAI" } });
-    }
-    return res.status(200).json({
-      ok: true,
-      message: { role: (choice.role as Role) ?? "assistant", content: choice.content as Content },
-    });
+    const fallback = await chatCompletionsFallback(body);
+    return res.status(200).json({ ok: true, message: fallback });
   } catch (e) {
     const err = normalizeError(e);
-    return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: err });
+    return res.status(200).json({ ok: false, error: err });
   }
 };
 
