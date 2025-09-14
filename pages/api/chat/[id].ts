@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
 
 type Role = "system" | "user" | "assistant";
 type TextPart = { type: "text"; text: string };
@@ -7,10 +9,10 @@ type ImagePart = { type: "image_url"; image_url: { url: string } };
 type Content = string | Array<TextPart | ImagePart>;
 
 export type ChatMessage = { role: Role; content: Content };
-type ChatRequestBody = { 
-  messages: ChatMessage[]; 
-  model?: string; 
-  temperature?: number; 
+type ChatRequestBody = {
+  messages: ChatMessage[];
+  model?: string;
+  temperature?: number;
   maxTokens?: number;
   assistant_id?: string;
   thread_id?: string;
@@ -49,6 +51,60 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === 'true';
 
+// --- helpers ---------------------------------------------------------------
+const getMimeFromUrl = (url: string): string => {
+  const u = url.toLowerCase();
+  if (u.endsWith(".png")) return "image/png";
+  if (u.endsWith(".webp")) return "image/webp";
+  if (u.endsWith(".gif")) return "image/gif";
+  if (u.endsWith(".bmp")) return "image/bmp";
+  if (u.endsWith(".svg")) return "image/svg+xml";
+  return "image/jpeg";
+};
+
+// Преобразуем Content (строка или [{text}|{image_url}...]) в части Assistants v2:
+// [{ type:"input_text", text }, { type:"input_image", image_data:{ data, mime_type }}]
+const buildAssistantContentParts = (content: Content) => {
+  const parts: any[] = [];
+  if (typeof content === "string") {
+    const txt = content.trim();
+    if (txt) parts.push({ type: "input_text", text: txt });
+    return parts;
+  }
+  if (!Array.isArray(content)) return parts;
+  const publicRoot = path.join(process.cwd(), "public");
+  for (const p of content) {
+    if (!p || typeof p !== "object") continue;
+    if ((p as any).type === "text" && typeof (p as any).text === "string") {
+      const txt = (p as any).text.trim();
+      if (txt) parts.push({ type: "input_text", text: txt });
+      continue;
+    }
+    if ((p as any).type === "image_url" && (p as any).image_url?.url) {
+      const url: string = (p as any).image_url.url;
+      try {
+        if (url.startsWith("/")) {
+          const abs = path.join(publicRoot, url);
+          if (!abs.startsWith(publicRoot)) {
+            parts.push({ type: "input_text", text: `Attachment (image): ${url}` });
+            continue;
+          }
+          const buf = fs.readFileSync(abs);
+          const b64 = buf.toString("base64");
+          const mime = getMimeFromUrl(url);
+          parts.push({ type: "input_image", image_data: { data: b64, mime_type: mime } });
+        } else {
+          parts.push({ type: "input_text", text: `Attachment (image url): ${url}` });
+        }
+      } catch {
+        parts.push({ type: "input_text", text: `Attachment (image url): ${url}` });
+      }
+    }
+  }
+  return parts;
+};
+// ---------------------------------------------------------------------------
+
 const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | ErrorPayload>) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -65,12 +121,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
 
   // If assistant_id is provided, use assistant API
   if (body.assistant_id) {
-    console.log('Using assistant API with ID:', body.assistant_id);
     try {
       let threadId = disableThreadReuse ? undefined : body.thread_id;
-      
+
       if (!threadId) {
-        console.log('Creating new thread...');
         const threadRes = await fetch('https://api.openai.com/v1/threads', {
           method: 'POST',
           headers: {
@@ -79,60 +133,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             'Content-Type': 'application/json',
           },
         });
-        
-        if (!threadRes.ok) {
-          const t = await threadRes.text().catch(()=> '');
-          console.error('THREAD CREATE FAILED', threadRes.status, threadRes.statusText, t);
-          return res.status(500).json({ ok:false, error:{ message:'thread_create_failed' }});
-        }
-        
-        const thread = await threadRes.json().catch(async () => {
-          const t = await threadRes.text().catch(()=> '');
-          console.error('THREAD PARSE FAILED', t);
-          return null;
-        });
-        
-        if (!thread?.id) {
-          console.error('THREAD ID MISSING', thread);
-          return res.status(500).json({ ok:false, error:{ message:'thread_missing' }});
-        }
-        
+        const thread = await threadRes.json();
         threadId = thread.id;
-        console.log('Thread created:', threadId);
       }
 
-      // Convert messages to assistant format with multimodal support
+      // vision: текст + картинки -> parts
       const lastMessage = body.messages[body.messages.length - 1];
-      let content: any;
-      
-      if (typeof lastMessage.content === "string") {
-        // Simple text message
-        content = lastMessage.content;
-      } else if (Array.isArray(lastMessage.content)) {
-        // Multimodal message - send as parts for images
-        const hasImages = lastMessage.content.some((part: any) => part.type === "image_url");
-        
-        if (hasImages) {
-          // Send as multimodal content for images
-          content = lastMessage.content.map((part: any) => {
-            if (part.type === "text") {
-              return { type: "input_text", text: part.text };
-            } else if (part.type === "image_url") {
-              return { type: "input_image", image_url: { url: part.image_url.url } };
-            }
-            return null;
-          }).filter(Boolean);
-        } else {
-          // No images, convert to text
-          content = lastMessage.content.map((part: any) => {
-            if (part.type === "text") return part.text;
-            return "";
-          }).join(" ");
-        }
-      }
+      const contentParts = buildAssistantContentParts(lastMessage.content);
 
-      console.log('Posting message to thread:', threadId, 'Content type:', typeof content, 'Has images:', Array.isArray(content));
-      const msgRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -141,17 +150,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
         body: JSON.stringify({
           role: 'user',
-          content: content,
+          content: contentParts,
         }),
       });
-      
-      if (!msgRes.ok) {
-        const t = await msgRes.text().catch(()=> '');
-        console.error('MESSAGE POST FAILED', msgRes.status, msgRes.statusText, t);
-        return res.status(500).json({ ok:false, error:{ message:'message_post_failed' }});
-      }
-      
-      console.log('Message posted successfully');
 
       const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
         method: 'POST',
@@ -164,13 +165,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
       });
 
       if (!runRes.ok) {
-        let bodyText = '';
-        try { bodyText = await runRes.text(); } catch {}
-        console.error('RUN START FAILED', {
-          status: runRes.status,
-          statusText: runRes.statusText,
-          body: bodyText,
-        });
         return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
       }
 
@@ -189,12 +183,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             'OpenAI-Beta': 'assistants=v2',
           },
         });
-        if (!statusRes.ok) {
-          let t = '';
-          try { t = await statusRes.text(); } catch {}
-          console.error('STATUS CHECK FAILED', statusRes.status, statusRes.statusText, t);
-          return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
-        }
         const statusData = await statusRes.json();
         status = statusData.status;
         attempts++;
@@ -224,22 +212,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
 
       return res.status(200).json({
         ok: true,
-        message: { 
-          role: 'assistant', 
-          content: lastAssistantMessage.content[0].text.value 
+        message: {
+          role: 'assistant',
+          content: lastAssistantMessage.content?.[0]?.text?.value ?? '',
         },
         thread_id: threadId,
       });
-    } catch (e: any) {
+    } catch (e) {
       const err = normalizeError(e);
-      try {
-        console.error('ASSISTANT ERROR', e?.response?.data || e?.message || String(e));
-      } catch {}
       return res.status(500).json({ ok: false, error: err });
     }
   }
 
-  // Fallback to direct chat completion
+  // Fallback: direct chat completion
   const model = (body.model || "gpt-4o-mini").trim();
   const temperature = Number.isFinite(body.temperature) ? body.temperature! : 0.7;
   const max_tokens = Number.isFinite(body.maxTokens) ? Math.max(1, Math.floor(body.maxTokens!)) : 1024;
@@ -271,7 +256,7 @@ export default handler;
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: "5mb",
+      sizeLimit: "15mb",
     },
   },
 };
