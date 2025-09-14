@@ -49,7 +49,7 @@ const normalizeError = (e: any) => {
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === 'true';
+const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === "true";
 
 // --- helpers ---------------------------------------------------------------
 const getMimeFromUrl = (url: string): string => {
@@ -62,8 +62,7 @@ const getMimeFromUrl = (url: string): string => {
   return "image/jpeg";
 };
 
-// Преобразуем Content (строка или [{text}|{image_url}...]) в части Assistants v2:
-// [{ type:"input_text", text }, { type:"input_image", image_data:{ data, mime_type }}]
+// Преобразуем Content (строка или [{text}|{image_url}...]) в части Assistants v2
 const buildAssistantContentParts = (content: Content) => {
   const parts: any[] = [];
   if (typeof content === "string") {
@@ -72,6 +71,7 @@ const buildAssistantContentParts = (content: Content) => {
     return parts;
   }
   if (!Array.isArray(content)) return parts;
+
   const publicRoot = path.join(process.cwd(), "public");
   for (const p of content) {
     if (!p || typeof p !== "object") continue;
@@ -113,24 +113,25 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
 
   const body: ChatRequestBody | undefined = req.body;
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
-    return res.status(400).json({ ok: false, error: { message: "Invalid body: expected { messages: ChatMessage[] }" } });
+    return res
+      .status(400)
+      .json({ ok: false, error: { message: "Invalid body: expected { messages: ChatMessage[] }" } });
   }
   if (!body.messages.every(isMessageValid)) {
     return res.status(400).json({ ok: false, error: { message: "Invalid message schema (roles or content parts)" } });
   }
 
-  // If assistant_id is provided, use assistant API
   if (body.assistant_id) {
     try {
       let threadId = disableThreadReuse ? undefined : body.thread_id;
 
       if (!threadId) {
-        const threadRes = await fetch('https://api.openai.com/v1/threads', {
-          method: 'POST',
+        const threadRes = await fetch("https://api.openai.com/v1/threads", {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2',
-            'Content-Type': 'application/json',
+            "OpenAI-Beta": "assistants=v2",
+            "Content-Type": "application/json",
           },
         });
         const thread = await threadRes.json();
@@ -142,45 +143,45 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
       const contentParts = buildAssistantContentParts(lastMessage.content);
 
       await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
-          'Content-Type': 'application/json',
+          "OpenAI-Beta": "assistants=v2",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          role: 'user',
+          role: "user",
           content: contentParts,
         }),
       });
 
       const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
-          'Content-Type': 'application/json',
+          "OpenAI-Beta": "assistants=v2",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ assistant_id: body.assistant_id }),
       });
 
       if (!runRes.ok) {
-        return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
+        return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
       }
 
       const run = await runRes.json();
-      if (run.status === 'failed') {
-        return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
+      if (run.status === "failed") {
+        return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
       }
 
       let status = run.status;
       let attempts = 0;
-      while (status !== 'completed' && status !== 'failed' && attempts < 20) {
+      while (status !== "completed" && status !== "failed" && attempts < 20) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         const statusRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
           headers: {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2',
+            "OpenAI-Beta": "assistants=v2",
           },
         });
         const statusData = await statusRes.json();
@@ -188,24 +189,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         attempts++;
       }
 
-      if (status !== 'completed') {
-        return res.status(500).json({ ok: false, error: { message: 'assistant_unavailable' } });
+      if (status !== "completed") {
+        return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
       }
 
       const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
+          "OpenAI-Beta": "assistants=v2",
         },
       });
 
       const messagesData = await messagesRes.json();
-      const lastAssistantMessage = messagesData.data.find((msg: any) => msg.role === 'assistant');
+      const assistantMessages = messagesData.data
+        .filter((msg: any) => msg.role === "assistant")
+        .sort((a: any, b: any) => b.created_at - a.created_at);
+
+      const lastAssistantMessage = assistantMessages[0];
 
       if (!lastAssistantMessage) {
         return res.status(200).json({
           ok: true,
-          message: { role: 'assistant', content: 'Ассистент не дал ответа.' },
+          message: { role: "assistant", content: "Ассистент не дал ответа." },
           thread_id: threadId,
         });
       }
@@ -213,8 +218,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
       return res.status(200).json({
         ok: true,
         message: {
-          role: 'assistant',
-          content: lastAssistantMessage.content?.[0]?.text?.value ?? '',
+          role: "assistant",
+          content: lastAssistantMessage.content?.[0]?.text?.value ?? "",
         },
         thread_id: threadId,
       });
