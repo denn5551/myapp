@@ -16,9 +16,15 @@ type ChatRequestBody = {
   maxTokens?: number;
   assistant_id?: string;
   thread_id?: string;
+  debug?: boolean;
 };
 type ErrorPayload = { ok: false; error: { message: string; code?: string | number } };
-type OkPayload = { ok: true; message: { role: Role; content: Content }; thread_id?: string };
+type OkPayload = {
+  ok: true;
+  message: { role: Role; content: Content };
+  thread_id?: string;
+  debug?: any;
+};
 
 const isContentValid = (c: unknown): c is Content => {
   if (typeof c === "string") return true;
@@ -103,6 +109,13 @@ const buildAssistantContentParts = (content: Content) => {
   }
   return parts;
 };
+
+const pickLatestAssistantMessage = (messagesData: any) => {
+  const assistantMessages = (messagesData?.data || [])
+    .filter((m: any) => m.role === "assistant")
+    .sort((a: any, b: any) => (b.created_at || 0) - (a.created_at || 0));
+  return assistantMessages[0];
+};
 // ---------------------------------------------------------------------------
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | ErrorPayload>) => {
@@ -121,10 +134,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
     return res.status(400).json({ ok: false, error: { message: "Invalid message schema (roles or content parts)" } });
   }
 
+  // ---------------- Assistants v2 ----------------
   if (body.assistant_id) {
     try {
       let threadId = disableThreadReuse ? undefined : body.thread_id;
 
+      // 1) Создаём тред при необходимости
       if (!threadId) {
         const threadRes = await fetch("https://api.openai.com/v1/threads", {
           method: "POST",
@@ -134,27 +149,53 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             "Content-Type": "application/json",
           },
         });
+        if (!threadRes.ok) {
+          const txt = await threadRes.text();
+          return res.status(502).json({ ok: false, error: { message: `thread_create_failed: ${txt}` } });
+        }
         const thread = await threadRes.json();
         threadId = thread.id;
       }
 
-      // vision: текст + картинки -> parts
+      // 2) Кладём сообщение пользователя (vision parts)
       const lastMessage = body.messages[body.messages.length - 1];
       const contentParts = buildAssistantContentParts(lastMessage.content);
 
-      await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      const msgRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "OpenAI-Beta": "assistants=v2",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          role: "user",
-          content: contentParts,
-        }),
+        body: JSON.stringify({ role: "user", content: contentParts }),
       });
+      if (!msgRes.ok) {
+        const txt = await msgRes.text();
+        return res.status(502).json({
+          ok: false,
+          error: { message: `message_create_failed: ${txt}` },
+        });
+      }
+      const createdMessage = await msgRes.json();
 
+      // 2.1) Верифицируем, что сообщение действительно в треде
+      const verifyRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?order=desc&limit=5`, {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "OpenAI-Beta": "assistants=v2",
+        },
+      });
+      const verifyData = await verifyRes.json();
+      const hasUser = (verifyData?.data || []).some((m: any) => m.id === createdMessage.id || m.role === "user");
+      if (!hasUser) {
+        return res.status(502).json({
+          ok: false,
+          error: { message: "message_not_in_thread" },
+        });
+      }
+
+      // 3) Запускаем ран
       const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
         method: "POST",
         headers: {
@@ -164,20 +205,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
         body: JSON.stringify({ assistant_id: body.assistant_id }),
       });
-
       if (!runRes.ok) {
-        return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
+        const txt = await runRes.text();
+        return res.status(502).json({ ok: false, error: { message: `run_create_failed: ${txt}` } });
       }
-
       const run = await runRes.json();
       if (run.status === "failed") {
         return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
       }
 
+      // 4) Ожидаем завершение
       let status = run.status;
       let attempts = 0;
-      while (status !== "completed" && status !== "failed" && attempts < 20) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      while (status !== "completed" && status !== "failed" && attempts < 30) {
+        await new Promise((r) => setTimeout(r, 1000));
         const statusRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
           headers: {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -188,40 +229,39 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         status = statusData.status;
         attempts++;
       }
-
       if (status !== "completed") {
-        return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
+        return res.status(500).json({ ok: false, error: { message: `assistant_status: ${status}` } });
       }
 
-      const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      // 5) Забираем последние сообщения и берём самый новый ответ ассистента
+      const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?order=desc&limit=20`, {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "OpenAI-Beta": "assistants=v2",
         },
       });
-
+      if (!messagesRes.ok) {
+        const txt = await messagesRes.text();
+        return res.status(502).json({ ok: false, error: { message: `messages_fetch_failed: ${txt}` } });
+      }
       const messagesData = await messagesRes.json();
-      const assistantMessages = messagesData.data
-        .filter((msg: any) => msg.role === "assistant")
-        .sort((a: any, b: any) => b.created_at - a.created_at);
-
-      const lastAssistantMessage = assistantMessages[0];
+      const lastAssistantMessage = pickLatestAssistantMessage(messagesData);
 
       if (!lastAssistantMessage) {
         return res.status(200).json({
           ok: true,
           message: { role: "assistant", content: "Ассистент не дал ответа." },
           thread_id: threadId,
+          debug: body.debug ? { contentParts, createdMessage, messagesSample: messagesData?.data?.slice(0, 3) } : undefined,
         });
       }
 
+      // 6) Возвращаем контент
       return res.status(200).json({
         ok: true,
-        message: {
-          role: "assistant",
-          content: lastAssistantMessage.content?.[0]?.text?.value ?? "",
-        },
+        message: { role: "assistant", content: lastAssistantMessage.content?.[0]?.text?.value ?? "" },
         thread_id: threadId,
+        debug: body.debug ? { contentParts, createdMessage, lastAssistantId: lastAssistantMessage.id } : undefined,
       });
     } catch (e) {
       const err = normalizeError(e);
@@ -229,7 +269,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
     }
   }
 
-  // Fallback: direct chat completion
+  // ---------------- Chat Completions fallback ----------------
   const model = (body.model || "gpt-4o-mini").trim();
   const temperature = Number.isFinite(body.temperature) ? body.temperature! : 0.7;
   const max_tokens = Number.isFinite(body.maxTokens) ? Math.max(1, Math.floor(body.maxTokens!)) : 1024;
@@ -260,8 +300,6 @@ export default handler;
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: "15mb",
-    },
+    bodyParser: { sizeLimit: "15mb" },
   },
 };
