@@ -18,13 +18,15 @@ type ChatRequestBody = {
   thread_id?: string;
   debug?: boolean;
 };
-type ErrorPayload = { ok: false; error: { message: string; code?: string | number } };
+type ErrorPayload = { ok: false; error: { message: string; code?: string | number; detail?: any } };
 type OkPayload = {
   ok: true;
   message: { role: Role; content: Content };
   thread_id?: string;
   debug?: any;
 };
+
+const SAFE_ERROR_STATUS = 200; // чтобы фронт не падал на 5xx
 
 const isContentValid = (c: unknown): c is Content => {
   if (typeof c === "string") return true;
@@ -121,17 +123,19 @@ const pickLatestAssistantMessage = (messagesData: any) => {
 const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | ErrorPayload>) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: { message: "Method Not Allowed" } });
+    return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: { message: "Method Not Allowed" } });
   }
 
   const body: ChatRequestBody | undefined = req.body;
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return res
-      .status(400)
+      .status(SAFE_ERROR_STATUS)
       .json({ ok: false, error: { message: "Invalid body: expected { messages: ChatMessage[] }" } });
   }
   if (!body.messages.every(isMessageValid)) {
-    return res.status(400).json({ ok: false, error: { message: "Invalid message schema (roles or content parts)" } });
+    return res
+      .status(SAFE_ERROR_STATUS)
+      .json({ ok: false, error: { message: "Invalid message schema (roles or content parts)" } });
   }
 
   // ---------------- Assistants v2 ----------------
@@ -149,11 +153,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             "Content-Type": "application/json",
           },
         });
+        const threadText = await threadRes.text();
         if (!threadRes.ok) {
-          const txt = await threadRes.text();
-          return res.status(502).json({ ok: false, error: { message: `thread_create_failed: ${txt}` } });
+          return res.status(SAFE_ERROR_STATUS).json({
+            ok: false,
+            error: { message: "thread_create_failed", detail: threadText },
+          });
         }
-        const thread = await threadRes.json();
+        const thread = JSON.parse(threadText);
         threadId = thread.id;
       }
 
@@ -170,14 +177,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
         body: JSON.stringify({ role: "user", content: contentParts }),
       });
+      const msgText = await msgRes.text();
       if (!msgRes.ok) {
-        const txt = await msgRes.text();
-        return res.status(502).json({
+        return res.status(SAFE_ERROR_STATUS).json({
           ok: false,
-          error: { message: `message_create_failed: ${txt}` },
+          error: { message: "message_create_failed", detail: msgText },
         });
       }
-      const createdMessage = await msgRes.json();
+      const createdMessage = JSON.parse(msgText);
 
       // 2.1) Верифицируем, что сообщение действительно в треде
       const verifyRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?order=desc&limit=5`, {
@@ -186,12 +193,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
           "OpenAI-Beta": "assistants=v2",
         },
       });
-      const verifyData = await verifyRes.json();
+      const verifyText = await verifyRes.text();
+      if (!verifyRes.ok) {
+        return res.status(SAFE_ERROR_STATUS).json({
+          ok: false,
+          error: { message: "messages_verify_failed", detail: verifyText },
+        });
+      }
+      const verifyData = JSON.parse(verifyText);
       const hasUser = (verifyData?.data || []).some((m: any) => m.id === createdMessage.id || m.role === "user");
       if (!hasUser) {
-        return res.status(502).json({
+        return res.status(SAFE_ERROR_STATUS).json({
           ok: false,
-          error: { message: "message_not_in_thread" },
+          error: { message: "message_not_in_thread", detail: { createdMessage, verifySample: verifyData?.data } },
         });
       }
 
@@ -205,13 +219,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         },
         body: JSON.stringify({ assistant_id: body.assistant_id }),
       });
+      const runText = await runRes.text();
       if (!runRes.ok) {
-        const txt = await runRes.text();
-        return res.status(502).json({ ok: false, error: { message: `run_create_failed: ${txt}` } });
+        return res.status(SAFE_ERROR_STATUS).json({
+          ok: false,
+          error: { message: "run_create_failed", detail: runText },
+        });
       }
-      const run = await runRes.json();
+      const run = JSON.parse(runText);
       if (run.status === "failed") {
-        return res.status(500).json({ ok: false, error: { message: "assistant_unavailable" } });
+        return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: { message: "assistant_unavailable" } });
       }
 
       // 4) Ожидаем завершение
@@ -230,7 +247,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         attempts++;
       }
       if (status !== "completed") {
-        return res.status(500).json({ ok: false, error: { message: `assistant_status: ${status}` } });
+        return res.status(SAFE_ERROR_STATUS).json({
+          ok: false,
+          error: { message: "assistant_status", detail: status },
+        });
       }
 
       // 5) Забираем последние сообщения и берём самый новый ответ ассистента
@@ -240,11 +260,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
           "OpenAI-Beta": "assistants=v2",
         },
       });
+      const messagesText = await messagesRes.text();
       if (!messagesRes.ok) {
-        const txt = await messagesRes.text();
-        return res.status(502).json({ ok: false, error: { message: `messages_fetch_failed: ${txt}` } });
+        return res.status(SAFE_ERROR_STATUS).json({
+          ok: false,
+          error: { message: "messages_fetch_failed", detail: messagesText },
+        });
       }
-      const messagesData = await messagesRes.json();
+      const messagesData = JSON.parse(messagesText);
       const lastAssistantMessage = pickLatestAssistantMessage(messagesData);
 
       if (!lastAssistantMessage) {
@@ -256,16 +279,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         });
       }
 
-      // 6) Возвращаем контент
       return res.status(200).json({
         ok: true,
         message: { role: "assistant", content: lastAssistantMessage.content?.[0]?.text?.value ?? "" },
         thread_id: threadId,
-        debug: body.debug ? { contentParts, createdMessage, lastAssistantId: lastAssistantMessage.id } : undefined,
+        debug: body.debug ? { contentParts, lastAssistantId: lastAssistantMessage.id } : undefined,
       });
     } catch (e) {
       const err = normalizeError(e);
-      return res.status(500).json({ ok: false, error: err });
+      return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: err });
     }
   }
 
@@ -283,7 +305,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
     });
     const choice = completion.choices?.[0]?.message;
     if (!choice) {
-      return res.status(502).json({ ok: false, error: { message: "Empty response from OpenAI" } });
+      return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: { message: "Empty response from OpenAI" } });
     }
     return res.status(200).json({
       ok: true,
@@ -291,15 +313,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
     });
   } catch (e) {
     const err = normalizeError(e);
-    const status = typeof err.code === "number" ? err.code : 500;
-    return res.status(status >= 400 && status < 600 ? status : 500).json({ ok: false, error: err });
+    return res.status(SAFE_ERROR_STATUS).json({ ok: false, error: err });
   }
 };
 
 export default handler;
 
 export const config = {
-  api: {
-    bodyParser: { sizeLimit: "15mb" },
-  },
+  api: { bodyParser: { sizeLimit: "15mb" } },
 };
