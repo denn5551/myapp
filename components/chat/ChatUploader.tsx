@@ -1,123 +1,165 @@
-import React, { useCallback, useRef, useState } from "react";
-import ChatAttachments, { UploadedFile } from "./ChatAttachments";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+
+export type UploadedFile = {
+  url: string;
+  name: string;
+  type?: string;
+  size?: number;
+  isImage?: boolean;
+};
 
 type Props = {
-  onAttachmentsChange: (items: UploadedFile[]) => void;
-  maxFiles?: number;
+  /** отдаем наружу финальный список вложений */
+  onFilesChange?: (items: UploadedFile[]) => void;
+  /** кастомный accept при необходимости */
   accept?: string;
 };
 
-const DEFAULT_ACCEPT = "image/*,.pdf,.txt,.csv,.json,.zip,.doc,.docx";
-
-const ChatUploader: React.FC<Props> = ({
-  onAttachmentsChange,
-  maxFiles = Number(process.env.NEXT_PUBLIC_UPLOAD_MAX_FILES ?? 5),
-  accept = DEFAULT_ACCEPT,
-}) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+const ChatUploader: React.FC<Props> = ({ onFilesChange, accept = "image/*" }) => {
   const [items, setItems] = useState<UploadedFile[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const notify = (next: UploadedFile[]) => {
-    setItems(next);
-    onAttachmentsChange(next);
-  };
+  const notify = useCallback(
+    (next: UploadedFile[]) => {
+      setItems(next);
+      onFilesChange?.(next);
+    },
+    [onFilesChange]
+  );
 
-  const handleRemove = (index: number) => {
-    const next = items.filter((_, i) => i !== index);
-    notify(next);
-  };
-
-  const handleOpenPicker = () => inputRef.current?.click();
-
-  const doUpload = async (files: File[]) => {
-    if (!files.length) return;
-    setError(null);
+  const doUpload = useCallback(async (files: File[]) => {
+    if (!files?.length) return;
     setBusy(true);
+    setErr(null);
+
     try {
-      const formData = new FormData();
-      files.forEach((f) => formData.append("files[]", f));
-      const r = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await r.json();
-      if (!r.ok || !data.ok) throw new Error(data?.error || "Upload failed");
-      const next = [...items, ...data.files];
-      notify(next);
+      const fd = new FormData();
+      for (const f of files) fd.append("files", f); // ВАЖНО: 'files', не 'files[]'
+
+      const r = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await r.json().catch(() => ({} as any));
+
+      if (!r.ok || !data?.ok || !Array.isArray(data.files)) {
+        throw new Error(data?.error || "Upload failed");
+      }
+
+      const normalized: UploadedFile[] = data.files.map((f: any) => ({
+        url: f.url,
+        name: f.name ?? "file",
+        type: f.type,
+        size: f.size,
+        isImage: typeof f.isImage === "boolean" ? f.isImage : /^image\//.test(f.type ?? "")
+      }));
+
+      notify([...items, ...normalized]);
     } catch (e: any) {
-      setError(e?.message || "Ошибка загрузки");
+      setErr(e?.message || "Ошибка загрузки");
     } finally {
       setBusy(false);
     }
-  };
+  }, [items, notify]);
 
-  const takeFiles = async (fileList: FileList | null) => {
-    if (!fileList?.length) return;
-    const remain = Math.max(0, maxFiles - items.length);
-    await doUpload(Array.from(fileList).slice(0, remain));
-  };
+  const onInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files;
+    if (!f || !f.length) return;
+    void doUpload(Array.from(f));
+    // очищаем value, чтобы можно было выбрать тот же файл повторно
+    e.currentTarget.value = "";
+  }, [doUpload]);
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    await takeFiles(e.target.files);
-    e.target.value = "";
-  };
-
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    await takeFiles(e.dataTransfer.files);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => setIsDragging(false);
-
-  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const items = e.clipboardData?.items;
-    if (!items?.length) return;
-    const files: File[] = [];
-    for (const it of items as any) {
-      if (it.kind === "file") {
-        const f = it.getAsFile();
-        if (f) files.push(f);
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const files: File[] = [];
+      const dt = e.dataTransfer;
+      if (dt?.items) {
+        for (const it of Array.from(dt.items)) {
+          if (it.kind === "file") {
+            const f = it.getAsFile();
+            if (f) files.push(f);
+          }
+        }
+      } else if (dt?.files) {
+        files.push(...Array.from(dt.files));
       }
-    }
-    if (files.length) await doUpload(files);
-  }, [items]);
+      void doUpload(files);
+    },
+    [doUpload]
+  );
+
+  const onRemove = useCallback((idx: number) => {
+    const next = items.filter((_, i) => i !== idx);
+    notify(next);
+  }, [items, notify]);
+
+  const hasImages = useMemo(() => items.some(i => i.isImage), [items]);
 
   return (
     <div className="w-full">
+      {/* скрытый файл-инпут */}
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={accept}
+        className="hidden"
+        onChange={onInputChange}
+      />
+
+      {/* дропзона */}
       <div
-        role="button"
-        tabIndex={0}
-        aria-label="Загрузить файлы: кликните, перетащите или вставьте скриншот"
-        onClick={handleOpenPicker}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleOpenPicker(); }}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onPaste={handlePaste}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-sm outline-none transition ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white hover:bg-gray-50"}`}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDrop}
+        className="mt-3 rounded-xl border border-dashed border-gray-300 p-3 text-sm text-gray-600"
       >
-        <span aria-hidden className="shrink-0 text-gray-600">
-          {/* Paperclip icon */}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.2a2 2 0 1 1-2.83-2.83l8.49-8.49"/>
-          </svg>
-        </span>
-        <span className="truncate">
-          Перетащите файлы или <span className="underline">выберите</span>. Вставка скриншота — Ctrl/Cmd+V.
-        </span>
-        <span className="text-xs text-gray-500">{items.length} влож.</span>
+        Перетащите файлы сюда или{" "}
+        <button
+          type="button"
+          className="rounded bg-gray-100 px-2 py-1 hover:bg-gray-200"
+          onClick={() => inputRef.current?.click()}
+        >
+          Выберите файлы
+        </button>
       </div>
 
-      <input ref={inputRef} type="file" accept={accept} multiple hidden onChange={handleInputChange} />
-      {busy && <div className="mt-2 text-xs text-gray-500">Загружаем…</div>}
-      {error && <div className="mt-2 text-xs text-red-600">{error}</div>}
-      <ChatAttachments items={items} onRemove={handleRemove} />
+      {/* превью */}
+      {items.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {items.map((f, i) => (
+            <div key={`${f.url}-${i}`} className="relative rounded-lg border p-2">
+              {f.isImage ? (
+                <img
+                  src={f.url}
+                  alt={f.name}
+                  className="h-auto w-[150px] object-cover rounded-md"  // фикс-ширина превью
+                />
+              ) : (
+                <div className="w-[150px] h-[90px] flex items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500">
+                  {f.name}
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs shadow hover:bg-white"
+                onClick={() => onRemove(i)}
+                aria-label="Удалить файл"
+              >
+                Удалить
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-2 text-sm text-gray-500">Нет вложений</div>
+      )}
+
+      <div className="mt-2 text-xs text-gray-500">
+        {busy ? "Загружаем…" : "Готово к отправке"}
+      </div>
+      {err && <div className="mt-1 text-xs text-red-600">{err}</div>}
     </div>
   );
 };
