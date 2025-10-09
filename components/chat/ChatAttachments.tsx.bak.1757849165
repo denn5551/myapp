@@ -4,10 +4,7 @@ import { uploadsStore, type UploadItem } from "./uploads-store";
 export default function ChatAttachments() {
   const [items, setItems] = useState<UploadItem[]>(uploadsStore.get());
 
-  useEffect(() => {
-    const off = uploadsStore.subscribe(setItems);
-    return () => { try { off && off(); } catch {} };
-  }, []);
+  useEffect(() => uploadsStore.subscribe(setItems), []);
 
   if (!items.length) return null;
 
@@ -15,18 +12,24 @@ export default function ChatAttachments() {
     <div className="flex flex-wrap gap-2 mt-2">
       {items.map((it) => (
         <div key={it.url} className="relative border rounded-lg p-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={it.url} alt={it.name ?? "attachment"} className="w-[150px] h-auto object-cover rounded" />
+          {it.mime?.startsWith("image/") ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={it.url} alt={it.name ?? "attachment"} className="h-16 w-16 object-cover rounded" />
+          ) : (
+            <div className="h-16 w-16 flex items-center justify-center text-xs">{it.name ?? "file"}</div>
+          )}
           <button
             type="button"
             onClick={() => uploadsStore.remove(it.url)}
             className="absolute -top-2 -right-2 bg-white border rounded-full w-6 h-6"
             title="Убрать"
+            aria-label="Убрать вложение"
           >
             ✕
           </button>
         </div>
       ))}
+
       <button
         type="button"
         onClick={() => uploadsStore.clear()}

@@ -1,82 +1,58 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import formidable from 'formidable'
-import fs from 'fs/promises'
-import path from 'path'
-import openDb from '@/lib/db'
-import { isImageMime, normalizeMime } from '@/utils/mime'
-import { saveLocalFile } from '@/lib/storage'
+import type { NextApiRequest, NextApiResponse } from "next";
+import formidable from "formidable";
+import fs from "fs";
+import path from "path";
 
-export const config = { api: { bodyParser: false } }
+export const config = {
+  api: { bodyParser: false },
+};
 
-type ApiFile = { id: string; url: string; name: string; size: number; mime: string; isImage: boolean };
-type Ok = { ok: true; files: ApiFile[] };
-type Err = { ok: false; error: string };
+type UploadedFile = {
+  url: string;
+  name: string;
+  type?: string;
+  size?: number;
+  isImage?: boolean;
+};
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  const maxMb = Number(process.env.UPLOAD_MAX_FILE_MB || 20);
-  const maxFiles = Number(process.env.UPLOAD_MAX_FILES || 5);
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+  const uploadDir = path.join(process.cwd(), "public", "uploads");
+  await fs.promises.mkdir(uploadDir, { recursive: true });
 
-  await fs.mkdir(uploadDir, { recursive: true });
+  const form = formidable({ multiples: true, uploadDir, keepExtensions: true });
 
-  const form = formidable({
-    multiples: true,
-    maxFileSize: maxMb * 1024 * 1024,
-    uploadDir,
-    filename: (name, ext, part, form) => `${Date.now()}_${part.originalFilename}`
-  });
-
-  try {
-    const [fields, files] = await form.parse(req);
-    const list = Array.isArray(files['files[]']) ? files['files[]'] : files.files;
-    const arr = (Array.isArray(list) ? list : list ? [list] : []).slice(0, maxFiles);
-
-    if (arr.length === 0) {
-      return res.status(400).json({ ok: false, error: 'No files received' });
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      return res.status(400).json({ ok: false, error: "Parse error" });
     }
+    const arr: formidable.File[] = [];
+    const raw = files.files;
+    if (Array.isArray(raw)) arr.push(...raw);
+    else if (raw) arr.push(raw as formidable.File);
 
-    if (arr.length > maxFiles) {
-      return res.status(400).json({ ok: false, error: `Too many files. Max: ${maxFiles}` });
-    }
-
-    const db = await openDb();
-    const out: ApiFile[] = [];
-
+    const out: UploadedFile[] = [];
     for (const f of arr) {
-      const mime = normalizeMime(f.mimetype || 'application/octet-stream');
-      const size = f.size || 0;
-      const name = f.originalFilename || 'file';
+      // файл уже сохранён formidable в uploadDir
+      const rel = path.relative(path.join(process.cwd(), "public"), f.filepath);
+      const url = "/" + rel.replace(/\\/g, "/");
+      const isImage = /^image\//.test(f.mimetype || "");
 
-      if (size <= 0) {
-        return res.status(400).json({ ok: false, error: 'Empty file' });
-      }
-
-      if (size > maxMb * 1024 * 1024) {
-        return res.status(400).json({ ok: false, error: `File too large. Max ${maxMb} MB` });
-      }
-
-      const saved = await saveLocalFile(f.filepath, name);
-      const url = saved.url;
-
-      const id = crypto.randomUUID();
-      const isImg = isImageMime(mime) ? 1 : 0;
-
-      await db.run(
-        `INSERT INTO UploadAsset (id,url,name,size,mime,isImage) VALUES (?,?,?,?,?,?)`,
-        id, url, name, size, mime, isImg
-      );
-
-      out.push({ id, url, name, size, mime, isImage: !!isImg });
+      out.push({
+        url,
+        name: f.originalFilename || path.basename(f.filepath),
+        type: f.mimetype || undefined,
+        size: f.size,
+        isImage,
+      });
     }
 
-    return res.status(200).json({ ok: true, files: out });
-  } catch (e: any) {
-    console.error('Upload error:', e);
-    return res.status(500).json({ ok: false, error: 'upload_failed' });
-  }
-}
+    return res.json({ ok: true, files: out });
+  });
+};
+
+export default handler;
+

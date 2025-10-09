@@ -1,0 +1,136 @@
+*** Begin Patch
+*** Update File: pages/api/chat/[id].ts
+@@
+-import type { NextApiRequest, NextApiResponse } from "next";
+-import OpenAI from "openai";
++import type { NextApiRequest, NextApiResponse } from "next";
++import OpenAI from "openai";
++import fs from "fs";
++import path from "path";
+@@
+ type OkPayload = { ok: true, message: { role: Role; content: Content }; thread_id?: string };
+@@
+ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+ 
+ const disableThreadReuse = process.env.DISABLE_THREAD_REUSE === 'true';
+ 
++/**
++ * Простейшее определение mime по расширению.
++ * Если не распознали — вернём image/jpeg.
++ */
++const getMimeFromUrl = (url: string): string => {
++  const u = url.toLowerCase();
++  if (u.endsWith(".png")) return "image/png";
++  if (u.endsWith(".webp")) return "image/webp";
++  if (u.endsWith(".gif")) return "image/gif";
++  if (u.endsWith(".bmp")) return "image/bmp";
++  if (u.endsWith(".svg")) return "image/svg+xml";
++  return "image/jpeg";
++};
++
++/**
++ * Преобразует входной content (string | [{text}|{image_url}...])
++ * в массив частей Assistants v2 для gpt-4o:
++ *  - { type: "input_text", text }
++ *  - { type: "input_image", image_data: { data: base64, mime_type } }
++ * Изображения читаем с диска, если URL локальный ("/uploads/...").
++ * Иначе подставляем URL текстом (безопасный fallback).
++ */
++const buildAssistantContentParts = (content: Content) => {
++  const parts: any[] = [];
++
++  // Строка -> один input_text
++  if (typeof content === "string") {
++    const txt = content.trim();
++    if (txt) parts.push({ type: "input_text", text: txt });
++    return parts;
++  }
++
++  if (!Array.isArray(content)) return parts;
++
++  const publicRoot = path.join(process.cwd(), "public");
++
++  for (const p of content) {
++    if (!p || typeof p !== "object") continue;
++    // текстовые части
++    if ((p as any).type === "text" && typeof (p as any).text === "string") {
++      const txt = (p as any).text.trim();
++      if (txt) parts.push({ type: "input_text", text: txt });
++      continue;
++    }
++    // изображения
++    if ((p as any).type === "image_url" && (p as any).image_url?.url) {
++      const url: string = (p as any).image_url.url;
++      try {
++        // локальные файлы: "/uploads/..."
++        if (url.startsWith("/")) {
++          const abs = path.join(publicRoot, url);
++          if (!abs.startsWith(publicRoot)) {
++            // защита от выхода за public
++            parts.push({ type: "input_text", text: `Attachment (image): ${url}` });
++            continue;
++          }
++          const buf = fs.readFileSync(abs);
++          const b64 = buf.toString("base64");
++          const mime = getMimeFromUrl(url);
++          parts.push({
++            type: "input_image",
++            image_data: { data: b64, mime_type: mime },
++          });
++        } else {
++          // Внешние URL (без HTTPS у тебя может не загрузиться на стороне OpenAI),
++          // поэтому используем безопасный fallback — просто текст со ссылкой.
++          parts.push({ type: "input_text", text: `Attachment (image url): ${url}` });
++        }
++      } catch {
++        parts.push({ type: "input_text", text: `Attachment (image url): ${url}` });
++      }
++    }
++  }
++
++  return parts;
++};
++
+ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | ErrorPayload>) => {
+   if (req.method !== "POST") {
+     res.setHeader("Allow", "POST");
+     return res.status(405).json({ ok: false, error: { message: "Method Not Allowed" } });
+   }
+@@
+   // If assistant_id is provided, use assistant API
+   if (body.assistant_id) {
+     try {
+       let threadId = disableThreadReuse ? undefined : body.thread_id;
+@@
+-      // Convert messages to assistant format
+-      const lastMessage = body.messages[body.messages.length - 1];
+-      let content = "";
+-      
+-      if (typeof lastMessage.content === "string") {
+-        content = lastMessage.content;
+-      } else if (Array.isArray(lastMessage.content)) {
+-        // Convert parts to text for assistant API
+-        content = lastMessage.content.map(part => {
+-          if (part.type === "text") return part.text;
+-          if (part.type === "image_url") return `[Изображение: ${part.image_url.url}]`;
+-          return "";
+-        }).join(" ");
+-      }
++      // Преобразуем последнее сообщение в vision-части для gpt-4o
++      const lastMessage = body.messages[body.messages.length - 1];
++      const contentParts = buildAssistantContentParts(lastMessage.content);
+ 
+       await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+         method: 'POST',
+         headers: {
+           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+           'OpenAI-Beta': 'assistants=v2',
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           role: 'user',
+-          content: content,
++          content: contentParts,
+         }),
+       });
+*** End Patch

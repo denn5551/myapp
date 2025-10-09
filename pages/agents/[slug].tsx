@@ -1,350 +1,261 @@
-import { useRouter } from 'next/router';
-import { useEffect, useState, useRef, ReactElement } from 'react';
-import { useSidebarState } from '@/hooks/useSidebarState';
-import Link from 'next/link';
-import React from 'react';
-import { isSubscriptionValid } from '@/lib/subscription';
+// pages/agents/[slug].tsx
+import React, { useEffect, useMemo, useRef, useState, ReactElement } from "react";
+import Link from "next/link";
+import type { GetServerSideProps } from "next";
+import { useRouter } from "next/router";
 
-import { GetServerSideProps } from 'next';
-import { getAgentBySlug } from '@/lib/getAgentBySlug';
+import Sidebar from "@/components/Sidebar";
+import HamburgerIcon from "@/components/HamburgerIcon";
+import CloseIcon from "@/components/CloseIcon";
+import FavoriteButton from "@/components/FavoriteButton";
+import ChatInput from "@/components/chat/ChatInput";
 
-import Sidebar from '@/components/Sidebar';
-import HamburgerIcon from '@/components/HamburgerIcon';
-import CloseIcon from '@/components/CloseIcon';
-import FavoriteButton from '@/components/FavoriteButton';
-import ChatInput from '@/components/chat/ChatInput';
+import { useSidebarState } from "@/hooks/useSidebarState";
+import { isSubscriptionValid } from "@/lib/subscription";
+import { getAgentBySlug } from "@/lib/getAgentBySlug";
 
+const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === "true";
+const debugMode = process.env.NEXT_PUBLIC_DEBUG === "true";
 
-const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === 'true';
-const debugMode = process.env.NEXT_PUBLIC_DEBUG === 'true';
+type PageProps = {
+  slug: string;
+};
 
-// Функция для форматирования текста с абзацами
-const formatMessageText = (text: string): ReactElement[] => {
-  // Разбиваем текст на абзацы по двойным переносам строки
+// Форматирование ответов ассистента с абзацами и списками
+function formatMessageText(text: string): ReactElement[] {
   const paragraphs = text.split(/\n\s*\n/);
-  
-  return paragraphs.map((paragraph, index) => {
-    // Убираем лишние пробелы и переносы в начале и конце
-    const trimmedParagraph = paragraph.trim();
-    
-    if (!trimmedParagraph) return <React.Fragment key={index}></React.Fragment>;
-    
-    // Обрабатываем списки (строки, начинающиеся с -, *, цифры)
-    if (trimmedParagraph.includes('\n-') || trimmedParagraph.includes('\n*') || /\n\d+\./.test(trimmedParagraph)) {
-      const lines = trimmedParagraph.split('\n');
-      const elements: ReactElement[] = [];
-      let currentList: string[] = [];
-      let currentListType: 'ul' | 'ol' | null = null;
-      
-      lines.forEach((line, lineIndex) => {
-        const trimmedLine = line.trim();
-        
-        if (trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
-          if (currentListType !== 'ul') {
-            if (currentList.length > 0) {
-              elements.push(
-                <ol key={`ol-${index}-${elements.length}`}>
-                  {currentList.map((item, i) => <li key={i}>{item}</li>)}
+  return paragraphs.map((paragraph, idx) => {
+    const p = paragraph.trim();
+    if (!p) return <React.Fragment key={idx} />;
+
+    if (p.includes("\n-") || p.includes("\n*") || /\n\d+\./.test(p)) {
+      const lines = p.split("\n");
+      const out: ReactElement[] = [];
+      let list: string[] = [];
+      let listType: "ul" | "ol" | null = null;
+
+      lines.forEach((line, i) => {
+        const l = line.trim();
+        if (l.startsWith("-") || l.startsWith("*")) {
+          if (listType !== "ul") {
+            if (list.length) {
+              out.push(
+                <ol key={`ol-${idx}-${out.length}`}>
+                  {list.map((x, j) => (
+                    <li key={j}>{x}</li>
+                  ))}
                 </ol>
               );
-              currentList = [];
+              list = [];
             }
-            currentListType = 'ul';
+            listType = "ul";
           }
-          currentList.push(trimmedLine.substring(1).trim());
-        } else if (/^\d+\./.test(trimmedLine)) {
-          if (currentListType !== 'ol') {
-            if (currentList.length > 0) {
-              elements.push(
-                <ul key={`ul-${index}-${elements.length}`}>
-                  {currentList.map((item, i) => <li key={i}>{item}</li>)}
+          list.push(l.slice(1).trim());
+        } else if (/^\d+\./.test(l)) {
+          if (listType !== "ol") {
+            if (list.length) {
+              out.push(
+                <ul key={`ul-${idx}-${out.length}`}>
+                  {list.map((x, j) => (
+                    <li key={j}>{x}</li>
+                  ))}
                 </ul>
               );
-              currentList = [];
+              list = [];
             }
-            currentListType = 'ol';
+            listType = "ol";
           }
-          currentList.push(trimmedLine.replace(/^\d+\.\s*/, ''));
-        } else if (trimmedLine) {
-          if (currentList.length > 0) {
-            const ListComponent = currentListType === 'ul' ? 'ul' : 'ol';
-            elements.push(
+          list.push(l.replace(/^\d+\.\s*/, ""));
+        } else if (l) {
+          if (list.length) {
+            const Comp = listType === "ul" ? "ul" : "ol";
+            out.push(
               React.createElement(
-                ListComponent,
-                { key: `${currentListType}-${index}-${elements.length}` },
-                currentList.map((item, i) => <li key={i}>{item}</li>)
+                Comp,
+                { key: `${listType}-${idx}-${out.length}` },
+                list.map((x, j) => <li key={j}>{x}</li>)
               )
             );
-            currentList = [];
-            currentListType = null;
+            list = [];
+            listType = null;
           }
-          elements.push(<p key={`p-${index}-${lineIndex}`}>{trimmedLine}</p>);
+          out.push(<p key={`p-${idx}-${i}`}>{l}</p>);
         }
       });
-      
-      if (currentList.length > 0) {
-        const ListComponent = currentListType === 'ul' ? 'ul' : 'ol';
-        elements.push(
+
+      if (list.length) {
+        const Comp = listType === "ul" ? "ul" : "ol";
+        out.push(
           React.createElement(
-            ListComponent,
-            { key: `${currentListType}-${index}-final` },
-            currentList.map((item, i) => <li key={i}>{item}</li>)
+            Comp,
+            { key: `${listType}-${idx}-final` },
+            list.map((x, j) => <li key={j}>{x}</li>)
           )
         );
       }
-      
-      return <div key={index}>{elements}</div>;
+      return <div key={idx}>{out}</div>;
     }
-    
-    // Обычный абзац
-    return <p key={index}>{trimmedParagraph}</p>;
-  });
-};
 
-interface PageProps {
-  slug: string;
+    return <p key={idx}>{p}</p>;
+  });
 }
 
 export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
-  const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [errorDetails, setErrorDetails] = useState<any>(null)
-  const [isFavorite, setIsFavorite] = useState(false)
-  const id = agent?.assistantId || ''
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { sidebarOpen, toggleSidebar } = useSidebarState();
 
-  const [email, setEmail] = useState('');
-  const [assistantName, setAssistantName] = useState('');
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [agent, setAgent] = useState<{ assistantId: string; name: string } | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [assistantName, setAssistantName] = useState("");
+
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'trial' | 'expired'>('trial');
-  const [subscriptionEnd, setSubscriptionEnd] = useState<string>('');
-  const { sidebarOpen, toggleSidebar } = useSidebarState()
+
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<"active" | "trial" | "expired">("trial");
+  const [subscriptionEnd, setSubscriptionEnd] = useState("");
+
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  const id = agent?.assistantId || "";
+
+  // разные истории для разных ассистентов
+  const storageKey = useMemo(() => `chat_${slug}`, [slug]);
+
+  const endRef = useRef<HTMLDivElement>(null);
+  const scrollToBottom = () => endRef.current?.scrollIntoView({ behavior: "smooth" });
+  useEffect(scrollToBottom, [messages]);
+
+  // Загрузка данных ассистента
   useEffect(() => {
-    if (!router.isReady) return
-    fetch(`/api/agents/${slug}`)
-      .then(res => {
-        if (!res.ok) throw new Error('not found')
-        return res.json()
-      })
-      .then(data => {
+    if (!router.isReady) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/agents/${slug}`);
+        if (!r.ok) throw new Error("not found");
+        const data = await r.json();
         if (!data.assistant_id) {
-          console.log('assistant_id отсутствует')
-          setErrorMsg('Ассистент не найден')
-          return
+          setErrorMsg("Ассистент не найден");
+          return;
         }
-        setAgent({ assistantId: data.assistant_id, name: data.name })
-        setAssistantName(data.name)
-        setIsFavorite(!!data.isFavorite)
-      })
-      .catch(err => {
-        console.error(`Ассистент не найден по slug: ${slug}`, err)
-        setErrorMsg('Ассистент не найден')
-      })
-  }, [router.isReady, slug])
+        setAgent({ assistantId: data.assistant_id, name: data.name });
+        setAssistantName(data.name);
+        setIsFavorite(!!data.isFavorite);
+      } catch (e) {
+        console.error(`Ассистент не найден по slug: ${slug}`, e);
+        setErrorMsg("Ассистент не найден");
+      }
+    })();
+  }, [router.isReady, slug]);
 
+  // touch-событие
   useEffect(() => {
-    if (router.isReady && id) {
-      fetch(`/api/chats/${id}/touch`, { method: 'POST', credentials: 'include' })
-    }
-  }, [router.isReady, id])
+    if (!router.isReady || !id) return;
+    fetch(`/api/chats/${id}/touch`, { method: "POST", credentials: "include" }).catch(() => {});
+  }, [router.isReady, id]);
 
-  
-  // Автоматический скролл к последнему сообщению
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // данные пользователя / подписки
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    fetch('/api/me', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
+    (async () => {
+      try {
+        const r = await fetch("/api/me", { credentials: "include" });
+        const data = await r.json();
         if (!data.email) {
-          window.location.href = '/auth/login';
-        } else {
-          setEmail(data.email);
-          setSubscriptionStatus(data.subscriptionStatus || 'expired');
-          if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd);
+          window.location.href = "/auth/login";
+          return;
         }
-      });
+        setEmail(data.email);
+        setSubscriptionStatus(data.subscriptionStatus || "expired");
+        if (data.subscriptionEnd) setSubscriptionEnd(data.subscriptionEnd);
+      } catch {}
+    })();
   }, []);
 
-  // Загрузка истории сообщений из localStorage (только один раз)
+  // Загрузка истории (по slug)
   useEffect(() => {
-    if (router.isReady && id && !messagesLoaded) {
-      const saved = localStorage.getItem(`chat_${id}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setMessages(parsed);
-          } else {
-            setMessages(parsed.messages || []);
-            if (parsed.threadId && !disableThreadReuse) setThreadId(parsed.threadId);
-          }
-        } catch {
-          setMessages([]);
-        }
+    if (!router.isReady) return;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setMessages(Array.isArray(parsed) ? parsed : parsed.messages || []);
+        if (parsed.threadId && !disableThreadReuse) setThreadId(parsed.threadId);
+      } catch {
+        setMessages([]);
       }
-      setMessagesLoaded(true);
     }
-  }, [router.isReady, id, messagesLoaded]);
+    setMessagesLoaded(true);
+  }, [router.isReady, storageKey]);
 
-  // Сохранение сообщений при каждом изменении
+  // Сохранение истории
   useEffect(() => {
-    if (messagesLoaded) {
-      localStorage.setItem(
-        `chat_${id}`,
-        JSON.stringify({ messages, threadId: disableThreadReuse ? undefined : threadId })
-      );
-    }
-  }, [messages, threadId, id, messagesLoaded]);
+    if (!messagesLoaded) return;
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        messages,
+        threadId: disableThreadReuse ? undefined : threadId,
+      })
+    );
+  }, [messages, threadId, messagesLoaded, storageKey]);
 
-
-
-
-  const toggleUserMenu = () => {
-    setUserMenuOpen(!userMenuOpen);
-  };
-
+  const toggleUserMenu = () => setUserMenuOpen((x) => !x);
   const handleLogout = async () => {
     try {
-      const res = await fetch('/api/logout', { credentials: 'include' });
-      if (res.ok) {
-        window.location.href = '/auth/login';
-      }
-    } catch (e) {
-      console.error('Ошибка при выходе:', e);
-    }
+      const r = await fetch("/api/logout", { credentials: "include" });
+      if (r.ok) window.location.href = "/auth/login";
+    } catch {}
   };
 
   const access = isSubscriptionValid(subscriptionStatus, subscriptionEnd);
-  console.log('DEBUG [Chat Access]:', {
-    status: subscriptionStatus,
-    subscriptionEnd,
-    now: new Date(),
-    access,
-  });
-
-  async function sendMessage() {
-    if (!input.trim() || !id) {
-      if (!id) setErrorMsg('assistant_id отсутствует');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const body: any = { message: input, assistant_id: id };
-      if (!disableThreadReuse && threadId) body.thread_id = threadId;
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok || data?.error) {
-        console.error('Assistant response error', data);
-        setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
-        setErrorDetails(data?.details);
-        setLoading(false);
-        return;
-      }
-
-      if (!disableThreadReuse) {
-        setThreadId(data.thread_id || threadId);
-      }
-      setMessages(prev => [...prev, { role: 'user', content: input }, { role: data.role, content: data.content }]);
-      setInput('');
-      setErrorMsg(null);
-      setErrorDetails(null);
-    } catch (error: any) {
-      console.error('Ошибка при общении с ассистентом:', error);
-      setErrorMsg('Ассистент не может начать работу. Попробуйте позже.');
-      setErrorDetails(error?.details || { message: error.message });
-    }
-    setLoading(false);
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  // Автоматическое изменение высоты textarea
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-    
-    // Автоматическое изменение высоты
-    const textarea = e.target;
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-  };
 
   const handleClearChat = async () => {
-    console.log('🗑️ Очистка чата: запрошено');
     if (!id) return;
     try {
       const res = await fetch(`/api/agents/by-id/${id}/clear`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
       if (res.ok) {
-        console.log('🗑️ Чат очищен успешно');
         setMessages([]);
         setThreadId(undefined);
-        localStorage.removeItem(`chat_${id}`);
-      } else {
-        console.error('Ошибка при очистке чата:', res.status);
+        localStorage.removeItem(storageKey);
       }
     } catch (e) {
-      console.error('Ошибка при очистке чата:', e);
+      console.error("Ошибка при очистке чата:", e);
     }
   };
 
-
   return (
     <div className="chat-layout">
-      {/* Sidebar */}
-          <Sidebar
-  sidebarOpen={sidebarOpen}
-  toggleSidebar={toggleSidebar}
-  userEmail={email}
-  subscriptionStatus={subscriptionStatus}  
-/>
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
+        userEmail={email}
+        subscriptionStatus={subscriptionStatus}
+      />
 
-      {/* Main Chat Content */}
-      <main className={`chat-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
+      <main className={`chat-main ${sidebarOpen ? "with-sidebar" : "full-width"}`}>
         <header className="lk-header">
           <button className="mobile-hamburger" onClick={toggleSidebar}>
             {sidebarOpen ? <CloseIcon /> : <HamburgerIcon />}
           </button>
           <div className="header__title">
-            <h1>Чат с {assistantName}</h1>
+            <h1>Чат с {assistantName || "ассистентом"}</h1>
           </div>
           <div className="header__actions">
             <button className="btn-clear-chat" onClick={handleClearChat}>
               Очистить чат
             </button>
-            <FavoriteButton agentId={id} initialIsFavorite={isFavorite} />
+            {!!id && <FavoriteButton agentId={id} initialIsFavorite={isFavorite} />}
           </div>
           <div className="header__user" onClick={toggleUserMenu}>
-            <span className="user-avatar">
-              {email.charAt(0).toUpperCase()}
-            </span>
+            <span className="user-avatar">{email ? email.charAt(0).toUpperCase() : "U"}</span>
             {userMenuOpen && (
               <ul className="dropdown-menu">
                 <li>
@@ -370,27 +281,23 @@ export default function AgentChat({ slug }: PageProps) {
             <div className="chat-messages">
               {messages.length === 0 ? (
                 <div className="welcome-message">
-                  <h3>Добро пожаловать в чат с {assistantName}!</h3>
+                  <h3>Добро пожаловать в чат с {assistantName || "ассистентом"}!</h3>
                   <p>Начните разговор, написав ваше первое сообщение.</p>
                 </div>
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} className={`message ${msg.role}`}>
-                    <div className="message-avatar">
-                      {msg.role === 'user' ? email.charAt(0).toUpperCase() : 'ИИ'}
-                    </div>
+                    <div className="message-avatar">{msg.role === "user" ? "Вы" : "ИИ"}</div>
                     <div className="message-content">
                       <div className="message-author">
-                        {msg.role === 'user' ? 'Вы' : assistantName}
+                        {msg.role === "user" ? "Вы" : assistantName || "Ассистент"}
                       </div>
-                      <div className="message-text">
-                        {formatMessageText(msg.content)}
-                      </div>
+                      <div className="message-text">{formatMessageText(msg.content)}</div>
                     </div>
                   </div>
                 ))
               )}
-              <div ref={messagesEndRef} />
+              <div ref={endRef} />
             </div>
 
             {!access ? (
@@ -405,34 +312,29 @@ export default function AgentChat({ slug }: PageProps) {
               </div>
             ) : (
               <div className="chat-input-container">
+                {/* ChatInput сам отправляет и возвращает данные через onMessageSent */}
                 <ChatInput
                   threadId={threadId}
                   assistantId={id}
-onMessageSent={(ok, newThreadId, response, userMessage) => {
-  console.log('onMessageSent called:', { ok, newThreadId, response, userMessage });
-  if (ok) {
-    if (newThreadId && !disableThreadReuse) {
-      setThreadId(newThreadId);
-    }
-    // Clear input and reset loading state
-    setInput('');
-    setLoading(false);
-    setErrorMsg(null);
-    setErrorDetails(null);
-    
-    // Добавляем сообщения в состояние
-    if (response && userMessage) {
-      console.log('Adding messages:', { userMessage, response });
-      setMessages(prev => [...prev, 
-        { role: 'user', content: userMessage }, 
-        { role: 'assistant', content: response }
-      ]);
-    }
-  } else {
-    setLoading(false);
-    setErrorMsg('Ошибка отправки сообщения');
-  }
-}}
+                  onMessageSent={(ok, newThreadId, response, userMessage) => {
+                    if (!ok) {
+                      setErrorMsg("Ошибка отправки сообщения");
+                      return;
+                    }
+                    setErrorMsg(null);
+                    setErrorDetails(null);
+
+                    if (newThreadId && !disableThreadReuse) setThreadId(newThreadId);
+                    if (userMessage) {
+                      setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+                    }
+                    if (response) {
+                      setMessages((prev) => [
+                        ...prev,
+                        { role: "assistant", content: response },
+                      ]);
+                    }
+                  }}
                 />
               </div>
             )}
@@ -451,4 +353,3 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
   }
   return { props: { slug } };
 };
-
