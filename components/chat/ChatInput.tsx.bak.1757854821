@@ -1,0 +1,130 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import ChatUploader from "./ChatUploader";
+import ChatAttachments from "./ChatAttachments";
+import { uploadsStore, type UploadItem } from "./uploads-store";
+
+type Role = "system" | "user" | "assistant";
+type TextPart = { type: "text"; text: string };
+type ImagePart = { type: "image_url"; image_url: { url: string } };
+type Content = string | Array<TextPart | ImagePart>;
+
+export default function ChatInput(props: {
+  apiUrl?: string;         // если не задан, возьмём /agents/<slug> -> /api/chat/<slug>
+  assistantId?: string;
+  threadId?: string;
+  onSent?: (resp: any) => void;
+}) {
+  const [value, setValue] = useState("");
+  const [uploads, setUploads] = useState<UploadItem[]>(uploadsStore.get());
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+const [uploading, setUploading] = useState(false);
+
+  useEffect(() => uploadsStore.subscribe(setUploads), []);
+
+useEffect(() => {
+  const onBusy = (e: any) => setUploading(!!e?.detail);
+  window.addEventListener("upload:busy", onBusy as any);
+  return () => window.removeEventListener("upload:busy", onBusy as any);
+}, []);
+
+
+  // если apiUrl не передали пропсом — определяем из текущего пути
+const canSend = (value.trim().length > 0 || uploads.length > 0) && !uploading;
+  const derivedApiUrl = useMemo(() => {
+    if (props.apiUrl) return props.apiUrl;
+    if (typeof window !== "undefined") {
+      const m = window.location.pathname.match(/\/agents\/([^\/?#]+)/);
+      const slug = m?.[1];
+      if (slug) return `/api/chat/${slug}`;
+    }
+    return `/api/chat/marketolog`;
+  }, [props.apiUrl]);
+
+  const buildContent = useCallback((): Content => {
+    const parts: Array<TextPart | ImagePart> = [];
+    const txt = value.trim();
+    if (txt) parts.push({ type: "text", text: txt });
+    for (const u of uploads) parts.push({ type: "image_url", image_url: { url: u.url } });
+    return parts.length ? parts : "";
+  }, [value, uploads]);
+
+
+  const handleSend = useCallback(async () => {
+    if (!canSend || sending) return;
+    setSending(true);
+    setError(null);
+
+    try {
+      const body = {
+        assistant_id: props.assistantId,
+        thread_id: props.threadId,
+        messages: [{ role: "user" as Role, content: buildContent() }],
+      };
+
+      console.debug("[ChatInput] POST", derivedApiUrl, body);
+
+      const res = await fetch(derivedApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const ctype = res.headers.get("content-type") || "";
+      let json: any;
+
+      if (ctype.includes("application/json")) {
+        json = await res.json();
+      } else {
+        const txt = await res.text();
+        json = { ok: false, error: { message: `HTTP ${res.status} ${res.statusText}`, detail: txt.slice(0, 400) } };
+      }
+
+      console.debug("[ChatInput] RESPONSE", json);
+
+      // пробрасываем наверх, даже если ok:false — пусть UI решает
+      props.onSent?.(json);
+
+      if (json?.ok) {
+        setValue("");
+        uploadsStore.clear();
+      } else {
+        setError(json?.error?.message || "Не удалось отправить сообщение");
+      }
+    } catch (e: any) {
+      console.error("[ChatInput] fetch error:", e);
+      setError(e?.message || String(e));
+      props.onSent?.({ ok: false, error: { message: e?.message || String(e) } });
+    } finally {
+      setSending(false);
+    }
+  }, [canSend, sending, derivedApiUrl, props.assistantId, props.threadId, props.onSent, buildContent]);
+
+  return (
+    <form
+      onSubmit={(e) => { e.preventDefault(); void handleSend(); }}
+      className="border-t p-2"
+    >
+      <div className="flex gap-2 items-center">
+        <ChatUploader onChange={setUploads} />
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Напишите сообщение… (вставьте скриншот — Ctrl/Cmd+V)"
+          className="flex-1 border rounded-lg px-3 py-2"
+        />
+        <button
+          type="submit"
+          disabled={!canSend || sending}
+          className="px-3 py-2 rounded-lg bg-black text-white disabled:opacity-50"
+        >
+          Отправить
+        </button>
+      </div>
+
+      {error && <div className="text-red-600 text-sm mt-1">{error}</div>}
+
+      <ChatAttachments />
+    </form>
+  );
+}
