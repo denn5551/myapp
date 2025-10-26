@@ -96,6 +96,8 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
       if (isImg) {
         const url = absUrl(f.url);
         parts.push({ type: "image_url", image_url: { url } });
+        // Также добавляем ссылку в текст для отображения в чате
+        linksForText.push(`[file] ${f.name}: ${url}`);
       } else {
         linksForText.push(`[file] ${f.name}: ${absUrl(f.url)}`);
       }
@@ -257,10 +259,10 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
         )}
 
         {/* Основное поле ввода */}
-        <div className="flex items-end p-3 gap-2">
+        <div className="flex items-end p-4 gap-3">
           <div className="flex-1 relative">
             <textarea
-              className="w-full resize-none rounded-xl border border-gray-200 p-3 pr-12 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px] max-h-[120px]"
+              className="w-full resize-none rounded-2xl border-2 border-gray-200 bg-white p-4 pr-14 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 min-h-[52px] max-h-[140px] text-gray-800 placeholder-gray-400 shadow-sm transition-all duration-200 hover:border-gray-300"
               placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
               aria-label="Поле ввода сообщения"
               value={text}
@@ -328,7 +330,7 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
                 };
                 input.click();
               }}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all duration-200 text-lg"
               title="Прикрепить файлы"
             >
               📎
@@ -338,25 +340,37 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
           {/* Кнопка отправки */}
           <button
             type="button"
-            className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
             onClick={handleSend}
             disabled={!canSend}
             title="Отправить сообщение"
           >
             {busy ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              "→"
+              <span className="text-lg font-bold">→</span>
             )}
           </button>
         </div>
 
         {/* Статус и ошибки */}
-        <div className="px-3 pb-3 flex items-center justify-between">
-          <div className="text-xs text-gray-500">
-            {busy ? "Отправляем…" : attachments.length > 0 ? `${attachments.length} файл(ов) прикреплено` : "Готово к отправке"}
+        <div className="px-4 pb-4 flex items-center justify-between">
+          <div className="text-sm text-gray-500 font-medium">
+            {busy ? (
+              <span className="flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                Отправляем…
+              </span>
+            ) : attachments.length > 0 ? (
+              <span className="flex items-center gap-2 text-blue-600">
+                <span>📎</span>
+                {attachments.length} файл(ов) прикреплено
+              </span>
+            ) : (
+              "Готово к отправке"
+            )}
           </div>
-          {error && <div className="text-xs text-red-600">{error}</div>}
+          {error && <div className="text-sm text-red-600 font-medium bg-red-50 px-3 py-1 rounded-lg">{error}</div>}
         </div>
       </div>
     </div>

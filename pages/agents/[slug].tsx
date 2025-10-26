@@ -297,21 +297,26 @@ export default function AgentChat({ slug }: PageProps) {
                         {msg.role === "user" && msg.content.includes('[file]') ? (
                           <div>
                             {/* Показываем изображения из сообщения пользователя */}
-                            <div className="flex flex-wrap gap-2 mb-2">
+                            <div className="flex flex-wrap gap-2 mb-3">
                               {msg.content.match(/\[file\]\s*([^:]+):\s*(https?:\/\/[^\s]+)/g)?.map((match, idx) => {
                                 const url = match.match(/https?:\/\/[^\s]+/)?.[0];
                                 const name = match.match(/\[file\]\s*([^:]+):/)?.[1];
+                                console.log('Image found:', { url, name, match }); // Отладка
                                 if (url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
                                   return (
                                     <div key={idx} className="relative group">
                                       <img 
                                         src={url} 
                                         alt={name || "Изображение"} 
-                                        className="w-20 h-20 object-cover rounded-lg border border-gray-200 hover:scale-105 transition-transform cursor-pointer"
+                                        className="w-24 h-24 object-cover rounded-xl border-2 border-gray-200 hover:scale-105 transition-transform cursor-pointer shadow-sm"
                                         onClick={() => window.open(url, '_blank')}
+                                        onError={(e) => {
+                                          console.error('Image load error:', url);
+                                          e.currentTarget.style.display = 'none';
+                                        }}
                                       />
-                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all flex items-center justify-center">
-                                        <span className="text-white text-xs opacity-0 group-hover:opacity-100">Открыть</span>
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-xl transition-all flex items-center justify-center">
+                                        <span className="text-white text-xs opacity-0 group-hover:opacity-100 font-medium">Открыть</span>
                                       </div>
                                     </div>
                                   );
