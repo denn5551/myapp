@@ -227,10 +227,10 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
   return (
     <div className="w-full">
       {/* Поле ввода с встроенными вложениями */}
-      <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="card bg-base-100 shadow-md border border-base-300">
         {/* Миниатюры изображений */}
         {attachments.length > 0 && (
-          <div className="border-b border-gray-100 p-3">
+          <div className="divider m-0 p-4">
             <div className="flex flex-wrap gap-2">
               {attachments.map((file, index) => (
                 <div key={`${file.url}-${index}`} className="relative group">
@@ -238,18 +238,17 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
                     <img
                       src={file.url}
                       alt={file.name}
-                      className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                      style={{ width: '100px', height: '100px' }}
+                      className="w-24 h-24 object-cover rounded-lg border border-base-300"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                      <span className="text-xs text-gray-500">📄</span>
+                    <div className="w-24 h-24 bg-base-200 rounded-lg border border-base-300 flex items-center justify-center">
+                      <span className="text-xs text-base-content">📄</span>
                     </div>
                   )}
                   <button
                     type="button"
                     onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="btn btn-sm btn-circle btn-error absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     ×
                   </button>
@@ -260,77 +259,21 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
         )}
 
         {/* Основное поле ввода */}
-        <div className="flex items-end p-4 gap-3">
-          <div className="flex-1 relative">
-            <textarea
-              className="w-full resize-none rounded-2xl border-2 border-gray-200 bg-white p-4 pr-14 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 min-h-[52px] max-h-[140px] text-gray-800 placeholder-gray-400 shadow-sm transition-all duration-200 hover:border-gray-300"
-              placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
-              aria-label="Поле ввода сообщения"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={async (e) => {
-                e.preventDefault();
-                const files = Array.from(e.dataTransfer.files);
-                if (files.length > 0) {
-                  try {
-                    const fd = new FormData();
-                    for (const f of files) fd.append("files", f);
-                    const r = await fetch("/api/upload", { method: "POST", body: fd });
-                    const data = await r.json().catch(() => ({} as any));
-                    if (r.ok && data?.ok && Array.isArray(data.files)) {
-                      const normalized: UploadedFile[] = data.files.map((f: any) => ({
-                        url: f.url,
-                        name: f.name ?? "file",
-                        type: f.type,
-                        size: f.size,
-                        isImage: typeof f.isImage === "boolean" ? f.isImage : /^image\//.test(f.type ?? "")
-                      }));
-                      setAttachments(prev => [...prev, ...normalized]);
-                    }
-                  } catch (err) {
-                    setError("Ошибка загрузки файлов");
-                  }
-                }
-              }}
-              rows={1}
-              style={{
-                borderRadius: '16px',
-                border: '2px solid #e5e7eb',
-                backgroundColor: '#ffffff',
-                padding: '16px',
-                paddingRight: '56px',
-                outline: 'none',
-                minHeight: '52px',
-                maxHeight: '140px',
-                fontSize: '14px',
-                color: '#1f2937',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.2s ease',
-                fontFamily: 'inherit'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#e5e7eb';
-                e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-              }}
-            />
-            
-            {/* Скрепка для загрузки файлов */}
-            <button
-              type="button"
-              onClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.multiple = true;
-                input.accept = 'image/*';
-                input.onchange = async (e) => {
-                  const files = Array.from((e.target as HTMLInputElement).files || []);
+        <div className="card-body p-4">
+          <div className="flex items-end gap-3">
+            <div className="flex-1 relative">
+              <textarea
+                className="textarea textarea-bordered w-full resize-none min-h-[52px] max-h-[140px] pr-12"
+                placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
+                aria-label="Поле ввода сообщения"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const files = Array.from(e.dataTransfer.files);
                   if (files.length > 0) {
                     try {
                       const fd = new FormData();
@@ -351,42 +294,77 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
                       setError("Ошибка загрузки файлов");
                     }
                   }
-                };
-                input.click();
-              }}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all duration-200 text-lg"
-              title="Прикрепить файлы"
+                }}
+                rows={1}
+              />
+            
+              {/* Скрепка для загрузки файлов */}
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = 'image/*';
+                  input.onchange = async (e) => {
+                    const files = Array.from((e.target as HTMLInputElement).files || []);
+                    if (files.length > 0) {
+                      try {
+                        const fd = new FormData();
+                        for (const f of files) fd.append("files", f);
+                        const r = await fetch("/api/upload", { method: "POST", body: fd });
+                        const data = await r.json().catch(() => ({} as any));
+                        if (r.ok && data?.ok && Array.isArray(data.files)) {
+                          const normalized: UploadedFile[] = data.files.map((f: any) => ({
+                            url: f.url,
+                            name: f.name ?? "file",
+                            type: f.type,
+                            size: f.size,
+                            isImage: typeof f.isImage === "boolean" ? f.isImage : /^image\//.test(f.type ?? "")
+                          }));
+                          setAttachments(prev => [...prev, ...normalized]);
+                        }
+                      } catch (err) {
+                        setError("Ошибка загрузки файлов");
+                      }
+                    }
+                  };
+                  input.click();
+                }}
+                className="btn btn-ghost btn-sm absolute right-2 top-1/2 transform -translate-y-1/2"
+                title="Прикрепить файлы"
+              >
+                📎
+              </button>
+            </div>
+
+            {/* Кнопка отправки */}
+            <button
+              type="button"
+              className="btn btn-primary btn-circle"
+              onClick={handleSend}
+              disabled={!canSend}
+              title="Отправить сообщение"
             >
-              📎
+              {busy ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : (
+                "→"
+              )}
             </button>
           </div>
-
-          {/* Кнопка отправки */}
-          <button
-            type="button"
-            className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
-            onClick={handleSend}
-            disabled={!canSend}
-            title="Отправить сообщение"
-          >
-            {busy ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <span className="text-lg font-bold">→</span>
-            )}
-          </button>
         </div>
 
         {/* Статус и ошибки */}
-        <div className="px-4 pb-4 flex items-center justify-between">
-          <div className="text-sm text-gray-500 font-medium">
+        <div className="card-actions justify-between items-center p-4 pt-0">
+          <div className="text-sm text-base-content/70">
             {busy ? (
               <span className="flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <span className="loading loading-spinner loading-xs"></span>
                 Отправляем…
               </span>
             ) : attachments.length > 0 ? (
-              <span className="flex items-center gap-2 text-blue-600">
+              <span className="flex items-center gap-2 text-primary">
                 <span>📎</span>
                 {attachments.length} файл(ов) прикреплено
               </span>
@@ -394,7 +372,7 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
               "Готово к отправке"
             )}
           </div>
-          {error && <div className="text-sm text-red-600 font-medium bg-red-50 px-3 py-1 rounded-lg">{error}</div>}
+          {error && <div className="alert alert-error alert-sm">{error}</div>}
         </div>
       </div>
     </div>
