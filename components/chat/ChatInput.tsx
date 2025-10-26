@@ -239,6 +239,7 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
                       src={file.url}
                       alt={file.name}
                       className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                      style={{ width: '100px', height: '100px' }}
                     />
                   ) : (
                     <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
@@ -295,6 +296,29 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
                 }
               }}
               rows={1}
+              style={{
+                borderRadius: '16px',
+                border: '2px solid #e5e7eb',
+                backgroundColor: '#ffffff',
+                padding: '16px',
+                paddingRight: '56px',
+                outline: 'none',
+                minHeight: '52px',
+                maxHeight: '140px',
+                fontSize: '14px',
+                color: '#1f2937',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s ease',
+                fontFamily: 'inherit'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e5e7eb';
+                e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+              }}
             />
             
             {/* Скрепка для загрузки файлов */}
