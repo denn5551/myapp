@@ -292,7 +292,46 @@ export default function AgentChat({ slug }: PageProps) {
                       <div className="message-author">
                         {msg.role === "user" ? "Вы" : assistantName || "Ассистент"}
                       </div>
-                      <div className="message-text">{formatMessageText(msg.content)}</div>
+                      <div className="message-text">
+                        {/* Парсим контент для отображения изображений */}
+                        {msg.role === "user" && msg.content.includes('[file]') ? (
+                          <div>
+                            {/* Показываем изображения из сообщения пользователя */}
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {msg.content.match(/\[file\]\s*([^:]+):\s*(https?:\/\/[^\s]+)/g)?.map((match, idx) => {
+                                const url = match.match(/https?:\/\/[^\s]+/)?.[0];
+                                const name = match.match(/\[file\]\s*([^:]+):/)?.[1];
+                                console.log('Image found:', { url, name, match }); // Отладка
+                                if (url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
+                                  return (
+                                    <div key={idx} className="relative group">
+                                      <img 
+                                        src={url} 
+                                        alt={name || "Изображение"} 
+                                        className="w-24 h-24 object-cover rounded-xl border-2 border-gray-200 hover:scale-105 transition-transform cursor-pointer shadow-sm"
+                                        style={{ width: '100px', height: '100px' }}
+                                        onClick={() => window.open(url, '_blank')}
+                                        onError={(e) => {
+                                          console.error('Image load error:', url);
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-xl transition-all flex items-center justify-center">
+                                        <span className="text-white text-xs opacity-0 group-hover:opacity-100 font-medium">Открыть</span>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                            {/* Текстовое содержимое без ссылок на файлы */}
+                            {formatMessageText(msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/[^\s]+/g, '').trim())}
+                          </div>
+                        ) : (
+                          formatMessageText(msg.content)
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -341,6 +380,23 @@ export default function AgentChat({ slug }: PageProps) {
           </div>
         )}
       </main>
+      
+      {/* Глобальные стили для изображений в чате */}
+      <style jsx global>{`
+        .message-text img {
+          width: 100px !important;
+          height: 100px !important;
+          object-fit: cover !important;
+          border-radius: 12px !important;
+          border: 2px solid #e5e7eb !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+          cursor: pointer !important;
+          transition: transform 0.2s ease !important;
+        }
+        .message-text img:hover {
+          transform: scale(1.05) !important;
+        }
+      `}</style>
     </div>
   );
 }

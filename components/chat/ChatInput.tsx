@@ -1,6 +1,5 @@
 // components/chat/ChatInput.tsx
 import React, { useCallback, useMemo, useState } from "react";
-import ChatUploader from "./ChatUploader";
 
 export type UploadedFile = {
   url: string;
@@ -97,6 +96,8 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
       if (isImg) {
         const url = absUrl(f.url);
         parts.push({ type: "image_url", image_url: { url } });
+        // Также добавляем ссылку в текст для отображения в чате
+        linksForText.push(`[file] ${f.name}: ${url}`);
       } else {
         linksForText.push(`[file] ${f.name}: ${absUrl(f.url)}`);
       }
@@ -224,47 +225,156 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
   };
 
   return (
-    <div className="w-full rounded-2xl border border-gray-200 p-3">
-      <textarea
-        className="min-h-[80px] w-full resize-y rounded-xl border border-gray-200 p-3 outline-none focus:border-gray-300"
-        placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
-        aria-label="Поле ввода сообщения"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
-      />
+    <div className="w-full">
+      {/* Поле ввода с встроенными вложениями */}
+      <div className="card bg-base-100 shadow-md border border-base-300">
+        {/* Миниатюры изображений */}
+        {attachments.length > 0 && (
+          <div className="divider m-0 p-4">
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((file, index) => (
+                <div key={`${file.url}-${index}`} className="relative group">
+                  {file.isImage ? (
+                    <img
+                      src={file.url}
+                      alt={file.name}
+                      className="w-24 h-24 object-cover rounded-lg border border-base-300"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-base-200 rounded-lg border border-base-300 flex items-center justify-center">
+                      <span className="text-xs text-base-content">📄</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                    className="btn btn-sm btn-circle btn-error absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-      <div className="mt-3 chat-attachments">
-        {/* Важно: ChatUploader должен вызывать onFilesChange([...UploadedFile]) */}
-        <ChatUploader onFilesChange={handleFilesChange} />
-      </div>
+        {/* Основное поле ввода */}
+        <div className="card-body p-4">
+          <div className="flex items-end gap-3">
+            <div className="flex-1 relative">
+              <textarea
+                className="textarea textarea-bordered w-full resize-none min-h-[52px] max-h-[140px] pr-12"
+                placeholder="Напишите сообщение… (Ctrl/⌘+Enter — отправить)"
+                aria-label="Поле ввода сообщения"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const files = Array.from(e.dataTransfer.files);
+                  if (files.length > 0) {
+                    try {
+                      const fd = new FormData();
+                      for (const f of files) fd.append("files", f);
+                      const r = await fetch("/api/upload", { method: "POST", body: fd });
+                      const data = await r.json().catch(() => ({} as any));
+                      if (r.ok && data?.ok && Array.isArray(data.files)) {
+                        const normalized: UploadedFile[] = data.files.map((f: any) => ({
+                          url: f.url,
+                          name: f.name ?? "file",
+                          type: f.type,
+                          size: f.size,
+                          isImage: typeof f.isImage === "boolean" ? f.isImage : /^image\//.test(f.type ?? "")
+                        }));
+                        setAttachments(prev => [...prev, ...normalized]);
+                      }
+                    } catch (err) {
+                      setError("Ошибка загрузки файлов");
+                    }
+                  }
+                }}
+                rows={1}
+              />
+            
+              {/* Скрепка для загрузки файлов */}
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = 'image/*';
+                  input.onchange = async (e) => {
+                    const files = Array.from((e.target as HTMLInputElement).files || []);
+                    if (files.length > 0) {
+                      try {
+                        const fd = new FormData();
+                        for (const f of files) fd.append("files", f);
+                        const r = await fetch("/api/upload", { method: "POST", body: fd });
+                        const data = await r.json().catch(() => ({} as any));
+                        if (r.ok && data?.ok && Array.isArray(data.files)) {
+                          const normalized: UploadedFile[] = data.files.map((f: any) => ({
+                            url: f.url,
+                            name: f.name ?? "file",
+                            type: f.type,
+                            size: f.size,
+                            isImage: typeof f.isImage === "boolean" ? f.isImage : /^image\//.test(f.type ?? "")
+                          }));
+                          setAttachments(prev => [...prev, ...normalized]);
+                        }
+                      } catch (err) {
+                        setError("Ошибка загрузки файлов");
+                      }
+                    }
+                  };
+                  input.click();
+                }}
+                className="btn btn-ghost btn-sm absolute right-2 top-1/2 transform -translate-y-1/2"
+                title="Прикрепить файлы"
+              >
+                📎
+              </button>
+            </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        <div className="text-xs text-gray-500">
-          {busy ? "Отправляем…" : "Готово к отправке"}
+            {/* Кнопка отправки */}
+            <button
+              type="button"
+              className="btn btn-primary btn-circle"
+              onClick={handleSend}
+              disabled={!canSend}
+              title="Отправить сообщение"
+            >
+              {busy ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : (
+                "→"
+              )}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="rounded-xl bg-black px-4 py-2 text-white hover:opacity-90 focus:outline-none disabled:opacity-50"
-          onClick={handleSend}
-          disabled={!canSend}
-        >
-          Отправить
-        </button>
+
+        {/* Статус и ошибки */}
+        <div className="card-actions justify-between items-center p-4 pt-0">
+          <div className="text-sm text-base-content/70">
+            {busy ? (
+              <span className="flex items-center gap-2">
+                <span className="loading loading-spinner loading-xs"></span>
+                Отправляем…
+              </span>
+            ) : attachments.length > 0 ? (
+              <span className="flex items-center gap-2 text-primary">
+                <span>📎</span>
+                {attachments.length} файл(ов) прикреплено
+              </span>
+            ) : (
+              "Готово к отправке"
+            )}
+          </div>
+          {error && <div className="alert alert-error alert-sm">{error}</div>}
+        </div>
       </div>
-
-      {error && <div className="mt-2 text-xs text-red-600">{error}</div>}
-
-      {/* ГЛОБАЛЬНО уменьшаем превью внутри ChatUploader */}
-      <style jsx global>{`
-        .chat-attachments img {
-          width: 80px !important;
-          height: auto !important;
-          object-fit: cover !important;
-          border-radius: 8px !important;
-        }
-      `}</style>
     </div>
   );
 };
