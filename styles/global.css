@@ -7,6 +7,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@plugin "daisyui";
+
+@source "./pages/**/*.{js,ts,jsx,tsx,mdx}";
+@source "./components/**/*.{js,ts,jsx,tsx,mdx}";
+@source "./app/**/*.{js,ts,jsx,tsx,mdx}";
 
 /* 3) БАЗА: только глобальные теги и переменные — чтобы утилиты Tailwind могли их переопределять */
 @layer base {
@@ -49,11 +54,100 @@
     min-height: 100vh;
     box-sizing: border-box;
   }
+/* DaisyUI ←→ мои токены: сопоставление переменных */
+:root {
+  /* базовые фоны/текст (daisy: base-100/200/300 + base-content) */
+--bg: #ffffff 
+ --b1: var(--bg);             /* если у тебя нет --bg, подставь #FFFFFF */
+  --b2: var(--hover-bg);       /* мягкий серый для вторичного фона */
+  --b3: var(--border-color);   /* цвет границ */
+  --bc: var(--text-primary);   /* основной текст */
 
+  /* primary (пузыри пользователя, кнопка «Отправить») */
+  --p:  var(--primary-color);
+  --pc: #ffffff; /* контент на primary */
+
+  /* нейтральные */
+  --n:  var(--sidebar-bg);
+  --nc: var(--sidebar-text);
+
+  /* статусы на всякий */
+  --in: #38bdf8;
+  --su: #36d399;
+  --wa: #fbbd23;
+  --er: #f87272;
+}
+
+/* Убираем синие обводки у иконок в шапке/инпуте */
+.icon-btn,
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Скрыть вертикальную полосу у textarea */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
   /* убрана лишняя запятая в конце селектора */
   h1, h2, h3, h4, h5, h6 {
     color: #1F2937;
   }
+}
+/* Иконки в хедере/инпуте — без синей обводки при фокусе */
+.icon-btn,
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* убираем системную синюю обводку у иконок-кнопок */
+.icon-btn:focus,
+.icon-btn:focus-visible,
+.avatar[role="button"]:focus,
+.avatar[role="button"]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+/* ——— ДОП. СТИЛИ для чата ——— */
+
+/* Убираем синюю рамку у textarea при фокусе, аккуратный вид */
+.chat-textarea:focus,
+.textarea:focus,
+.input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Скругления/тени на кнопках-иконках в шапке */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  background: var(--fallback-b1, oklch(var(--b1)));
+  border: 1px solid oklch(var(--b3));
+}
+.icon-btn:hover { filter: brightness(0.98); }
+
+/* Аккуратные баблы (если DaisyUI не подключён – можно убрать) */
+.chat-bubble {
+  line-height: 1.55;
+}
+
+/* На всякий случай белый фон у body (убирает серый слой) */
+html, body {
+  background: #fff;
 }
 
 /* 4) КОМПОНЕНТЫ: все классы/селекторы страницы.
@@ -402,3 +496,6 @@
   }
 }
 
+/* скрыть полосу прокрутки у textarea / любых блоков */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

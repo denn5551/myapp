@@ -206,60 +206,8 @@ function renderMessageContent(content: string) {
       <main className="flex-1 flex flex-col">
         {/* Хедер: сервисные иконки справа */}
 
-<header className="sticky top-0 z-10 bg-base-100 border-b border-base-200">
-  <div className="max-w-[900px] mx-auto px-4 py-3 flex items-center justify-between">
-    <h1 className="text-lg font-semibold">Чат с {assistantName || "ассистентом"}</h1>
 
-    <div className="flex items-center gap-3">
-      <button
-        title="Очистить чат"
-        onClick={handleClearChat}
-        className="icon-btn text-base-content/80 hover:text-error focus:outline-none"
-      >
-        <Trash2 className="w-5 h-5" />
-      </button>
 
-      {!!id && (
-        <FavoriteButton
-          agentId={id}
-          initialIsFavorite={isFavorite}
-          iconOn={<Heart className="w-5 h-5 text-primary" />}
-          iconOff={<HeartOff className="w-5 h-5 opacity-70" />}
-        />
-      )}
-
-      {!!assistantDescription && (
-        <details className="dropdown">
-          <summary className="list-none cursor-pointer icon-btn text-base-content/80 hover:text-primary focus:outline-none">
-            <HelpCircle className="w-5 h-5" />
-          </summary>
-          <div className="dropdown-content z-[1] w-80 p-3 bg-base-100 rounded-xl shadow">
-            <div className="text-sm whitespace-pre-wrap">{assistantDescription}</div>
-          </div>
-        </details>
-      )}
-
-      <div className="dropdown dropdown-end">
-        <div
-          tabIndex={0}
-          role="button"
-          onClick={toggleUserMenu}
-          className="avatar placeholder focus:outline-none"
-        >
-          <div className="w-8 rounded-full bg-neutral text-neutral-content flex items-center justify-center">
-            <User className="w-4 h-4" />
-          </div>
-        </div>
-        {userMenuOpen && (
-          <ul className="dropdown-content z-[1] menu p-2 shadow bg-base-200 rounded-box w-44">
-            <li><Link href="/profile">Профиль</Link></li>
-            <li><button onClick={handleLogout}>Выйти</button></li>
-          </ul>
-        )}
-      </div>
-    </div>
-  </div>
-</header>
         {/* Тело чата */}
         <div className="flex-1">
           <div className="max-w-[900px] mx-auto px-4 py-6">
@@ -288,29 +236,30 @@ function renderMessageContent(content: string) {
 
 
 {/* ОДНО сообщение истории (DaisyUI chat) */}
-<div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-  <div className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}>
-    <div className="chat-image avatar">
-      <div className="w-9 md:w-10 rounded-full bg-base-300 flex items-center justify-center">
-        {msg.role === "user" ? (
-          <span className="text-base">👤</span>
-        ) : (
-          <span className="text-base">🤖</span>
-        )}
-      </div>
-    </div>
-
-    <div className="chat-header mb-1 text-xs opacity-70">
-      {msg.role === "user" ? "Вы" : assistantName}
-    </div>
-
-    <div className={`chat-bubble ${msg.role === "user" ? "bg-primary text-primary-content" : "bg-base-200 text-base-content"}`}>
-      {renderMessageContent(
-        msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/\S+/g, "").trim()
-      )}
+<div className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}>
+  <div className="chat-image avatar">
+    <div className="w-12 h-12 rounded-full bg-[color:var(--b3)] flex items-center justify-center text-xl">
+      <span>{msg.role === "user" ? "👤" : "🤖"}</span>
     </div>
   </div>
+
+  <div className="chat-header mb-1 text-xs opacity-70">
+    {msg.role === "user" ? "Вы" : assistantName}
+  </div>
+
+  <div
+    className={
+      msg.role === "user"
+        ? "chat-bubble chat-bubble-primary text-[color:var(--pc)]"
+        : "chat-bubble bg-[color:var(--b2)] text-[color:var(--bc)]"
+    }
+  >
+    {renderMessageContent(
+      msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/\S+/g, "").trim()
+    )}
+  </div>
 </div>
+
                       </div>
                     ))
                   )}
