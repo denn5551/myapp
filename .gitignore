@@ -1,81 +1,14 @@
-```
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Editors
-.vscode/
-.idea/
-
-# Dependencies
 node_modules/
-
-# Build artifacts
+.env
+.next/
 dist/
-build/
-target/
+data/users.db
+.env.local
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.venv.bak
-pip-log.txt
-pip-delete-this-directory.txt
+# env files
+.env*
 
-# Coverage
-.coverage
-coverage/
-htmlcov/
-.coverage.*
-
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# PyTest
-.pytest_cache/
-
-# Compression
-*.zip
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.gz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-
-# System
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-
-# Original rules preserved
-*.log
-```
+# Local backups and uploads
+backups/
+public/uploads/
+data/users.db.backup*
