@@ -1,6 +1,11 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 
+// Таймауты для разных операций
+const FETCH_TIMEOUT_CREATE = 30000; // 30 сек для создания thread/run
+const FETCH_TIMEOUT_POLL = 5000;    // 5 сек для polling
+const FETCH_TIMEOUT_READ = 10000;   // 10 сек для чтения сообщений
+
 const DISABLE_REUSE = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === "true";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -28,7 +33,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           "OpenAI-Beta": "assistants=v2",
           "Content-Type": "application/json",
         },
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_CREATE), // 30 second timeout for creation
       });
       
       if (!tr.ok) {
@@ -61,7 +66,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         role: "user",
         content, // массив parts [{type:'text',text},{type:'image_url',{url}}]
       }),
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_CREATE), // 30 second timeout for creation
     });
     
     if (!mr.ok) {
@@ -85,7 +90,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ assistant_id }),
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_CREATE), // 30 second timeout for creation
     });
 
     if (!rr.ok) {
@@ -120,7 +125,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
               Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
               "OpenAI-Beta": "assistants=v2",
             },
-            signal: AbortSignal.timeout(10000), // 10 second timeout
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_POLL), // 5 second timeout for polling
           }
         );
         
@@ -172,7 +177,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "OpenAI-Beta": "assistants=v2",
         },
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_READ), // 10 second timeout for reading
       }
     );
     
