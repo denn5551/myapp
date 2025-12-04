@@ -1,13 +1,42 @@
-node_modules/
+```
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
 .env
-.next/
+.env.local
+.env.
+
+# Editors
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Build artifacts
 dist/
-data/users.db.env.local
+build/
+target/
+*.pyc
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
-# env files
-.env*
-
-# Local backups and uploads
-backups/
-public/uploads/
-data/users.db.backup*
+# System files
+.DS_Store
+Thumbs.db
+coverage/
+htmlcov/
+```
