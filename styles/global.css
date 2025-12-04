@@ -166,7 +166,11 @@
 }
 
   /* Скрываем аватары/author если случайно попадутся */
-  .chat-header, .chat-title, .message-avatar, .message-author { display: none !important; }
+  .chat-header, .message-avatar, .message-author { display: none !important; }
+
+.chat-title {
+  display: block !important;
+}
 }
 
 
