@@ -3,8 +3,7 @@ import React, { useEffect, useMemo, useRef, useState, ReactElement } from "react
 import Link from "next/link";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
-import { Trash2 as TrashIcon, Heart, HeartOff, HelpCircle, User } from "lucide-react"; // или "@heroicons/react/24/outline" и т.п.
-
+import { Trash2, Heart, HeartOff, HelpCircle, User } from "lucide-react";
 
 import Sidebar from "@/components/Sidebar";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -13,7 +12,6 @@ import ChatInput from "@/components/chat/ChatInput";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { isSubscriptionValid } from "@/lib/subscription";
 import { getAgentBySlug } from "@/lib/getAgentBySlug";
-import { formatAiMessage } from "@/utils/formatAiMessage";
 
 const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === "true";
 const debugMode = process.env.NEXT_PUBLIC_DEBUG === "true";
@@ -34,7 +32,16 @@ const BotIcon = () => (
 
 type PageProps = { slug: string };
 
-
+// Простой рендер текста с абзацами.
+function renderMessage(text: string): ReactElement[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((p, i) => (
+      <p key={i} className="leading-6 whitespace-pre-wrap">
+        {p}
+      </p>
+    ));
+}
 
 export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
@@ -169,7 +176,22 @@ export default function AgentChat({ slug }: PageProps) {
     }
   };
 
+/** 
+ * Рендер содержимого сообщения (текст, markdown, ссылки и т.п.)
+ * Можно расширить, если потом захочешь поддерживать изображения или HTML
+ */
+function renderMessageContent(content: string) {
+  if (!content) return null;
 
+  // Если есть markdown (жирный, курсив) — можно потом заменить на markdown-парсер.
+  const lines = content.split(/\n+/).map((line, i) => (
+    <p key={i} className="whitespace-pre-wrap leading-relaxed break-words">
+      {line}
+    </p>
+  ));
+
+  return <div>{lines}</div>;
+}
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -184,71 +206,8 @@ export default function AgentChat({ slug }: PageProps) {
       <main className="flex-1 flex flex-col">
         {/* Хедер: сервисные иконки справа */}
 
-<header style={{
-    borderBottom: "1.5px solid #e5e7eb", // или другой светло-серый #dde2e8, #f1f5f9 и т.д.
-    boxShadow: "0 2px 8px rgba(30,41,59,0.05)"
-  }} className="sticky top-0 z-10 bg-base-100 border-b">
-  <div className="max-w-[900px] mx-auto px-4 py-3 flex items-center justify-between">
-    <h1 className="text-lg font-semibold">Чат с {assistantName || "ассистентом"}</h1>
-
-<div className="flex items-center gap-3">
-  {/* Кнопка "Очистить" */}
-  <button
-    title="Очистить чат"
-    onClick={handleClearChat}
-    className="icon-btn"
-    aria-label="Очистить"
-  >
-    <TrashIcon className="w-5 h-5" />
-  </button>
-
-  {/* Кнопка "Избранное" */}
-  {id && (
-    <button className="icon-btn" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}>
-      {isFavorite
-        ? <Heart className="w-5 h-5 text-primary" />
-        : <HeartOff className="w-5 h-5 opacity-70" />}
-    </button>
-  )}
-
-  {/* Выпадающее описание */}
-  {!!assistantDescription && (
-    <details className="icon-btn" style={{padding: 0}}>
-      <summary className="list-none cursor-pointer icon-btn" style={{padding: 0}}>
-        <HelpCircle className="w-5 h-5" />
-      </summary>
-      <div className="dropdown-content z-[1] min-w-[220px] max-w-xs bg-base-100 rounded-xl shadow p-3 mt-2">
-        <div className="text-sm whitespace-pre-wrap">{assistantDescription}</div>
-      </div>
-    </details>
-  )}
-
-  {/* Пользовательское меню */}
-  <div className="dropdown dropdown-end">
-    <button
-      tabIndex={0}
-      type="button"
-      onClick={toggleUserMenu}
-      className="icon-btn avatar placeholder"
-    >
-      <div className="w-8 h-8 rounded-full bg-neutral text-neutral-content flex items-center justify-center">
-        <User className="w-4 h-4" />
-      </div>
-    </button>
-    {userMenuOpen && (
-      <ul className="dropdown-content z-[2] menu p-2 shadow bg-base-200 rounded-box w-44 mt-2">
-        <li><Link href="/profile">Профиль</Link></li>
-        <li>
-          <button onClick={handleLogout}>Выйти</button>
-        </li>
-      </ul>
-    )}
-  </div>
-</div>
 
 
-  </div>
-</header>
         {/* Тело чата */}
         <div className="flex-1">
           <div className="max-w-[900px] mx-auto px-4 py-6">
@@ -278,22 +237,29 @@ export default function AgentChat({ slug }: PageProps) {
 
 {/* ОДНО сообщение истории (DaisyUI chat) */}
 <div className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}>
+  <div className="chat-image avatar">
+    <div className="w-12 h-12 rounded-full bg-[color:var(--b3)] flex items-center justify-center text-xl">
+      <span>{msg.role === "user" ? "👤" : "🤖"}</span>
+    </div>
+  </div>
+
+  <div className="chat-header mb-1 text-xs opacity-70">
+    {msg.role === "user" ? "Вы" : assistantName}
+  </div>
+
   <div
-    className="chat-bubble"
-    style={{
-      whiteSpace: 'pre-line',
-      wordBreak: 'break-word',
-      overflowWrap: 'anywhere',
-      background: msg.role === "user" ? "#daf0fe" : "#eeeeee",
-      color: "#3b3b3b",
-      maxWidth: "100%",
-    }}
+    className={
+      msg.role === "user"
+        ? "chat-bubble chat-bubble-primary text-[color:var(--pc)]"
+        : "chat-bubble bg-[color:var(--b2)] text-[color:var(--bc)]"
+    }
   >
-    {formatAiMessage(
+    {renderMessageContent(
       msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/\S+/g, "").trim()
     )}
   </div>
 </div>
+
                       </div>
                     ))
                   )}
