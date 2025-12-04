@@ -3,6 +3,11 @@ import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
 
+// Таймауты для разных операций
+const FETCH_TIMEOUT_CREATE = 30000; // 30 сек для создания thread/run
+const FETCH_TIMEOUT_POLL = 5000;    // 5 сек для polling
+const FETCH_TIMEOUT_READ = 10000;   // 10 сек для чтения сообщений
+
 type Role = "system" | "user" | "assistant";
 type TextPart = { type: "text"; text: string };
 type ImagePart = { type: "image_url"; image_url: { url: string } };
@@ -157,6 +162,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
 
       // 1) Создаём тред при необходимости
       if (!threadId) {
+        console.log("Creating new thread for assistant:", body.assistant_id);
         const threadRes = await fetch("https://api.openai.com/v1/threads", {
           method: "POST",
           headers: {
@@ -164,16 +170,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
             "OpenAI-Beta": "assistants=v2",
             "Content-Type": "application/json",
           },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_CREATE), // 30 second timeout for creation
         });
         const threadText = await threadRes.text();
-        if (!threadRes.ok) throw new Error(`thread_create_failed: ${threadText}`);
+        if (!threadRes.ok) {
+          console.error("Failed to create thread:", threadText);
+          throw new Error(`thread_create_failed: ${threadText}`);
+        }
         const thread = JSON.parse(threadText);
         threadId = thread.id;
+        console.log("Created new thread:", threadId);
+      } else {
+        console.log("Using existing thread:", threadId);
       }
 
       // 2) Кладём сообщение пользователя (vision parts)
       const lastMessage = body.messages[body.messages.length - 1];
       const contentParts = buildAssistantContentParts(lastMessage.content);
+      console.log("Adding user message to thread:", threadId);
 
       const msgRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
         method: "POST",
@@ -183,11 +197,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ role: "user", content: contentParts }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_CREATE), // 30 second timeout for creation
       });
       const msgText = await msgRes.text();
-      if (!msgRes.ok) throw new Error(`message_create_failed: ${msgText}`);
+      if (!msgRes.ok) {
+        console.error("Failed to add message to thread:", msgText);
+        throw new Error(`message_create_failed: ${msgText}`);
+      }
+      console.log("Message added successfully to thread:", threadId);
 
       // 3) Запускаем ран
+      console.log("Starting run for thread:", threadId, "assistant:", body.assistant_id);
       const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
         method: "POST",
         headers: {
@@ -196,38 +216,74 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ assistant_id: body.assistant_id }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_CREATE), // 30 second timeout for creation
       });
       const runText = await runRes.text();
-      if (!runRes.ok) throw new Error(`run_create_failed: ${runText}`);
+      if (!runRes.ok) {
+        console.error("Failed to start run:", runText);
+        throw new Error(`run_create_failed: ${runText}`);
+      }
       const run = JSON.parse(runText);
-      if (run.status === "failed") throw new Error("assistant_unavailable");
+      if (run.status === "failed") {
+        console.error("Run failed immediately:", run);
+        throw new Error("assistant_unavailable");
+      }
+      console.log("Run started successfully:", run.id);
 
       // 4) Ожидаем завершение
       let status = run.status;
       let attempts = 0;
-      while (status !== "completed" && status !== "failed" && attempts < 30) {
+      const maxAttempts = 60; // Increased attempts to allow more time
+      
+      console.log(`Starting to poll for run completion. Current status: ${status}`);
+      
+      while (status !== "completed" && status !== "failed" && attempts < maxAttempts) {
         await new Promise((r) => setTimeout(r, 1000));
-        const statusRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
-          headers: {
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            "OpenAI-Beta": "assistants=v2",
-          },
-        });
-        const statusData = await statusRes.json();
-        status = statusData.status;
         attempts++;
+        
+        try {
+          const statusRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
+            headers: {
+              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              "OpenAI-Beta": "assistants=v2",
+            },
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_POLL), // 5 second timeout for polling
+          });
+          const statusData = await statusRes.json();
+          status = statusData.status;
+          
+          console.log(`Run status after ${attempts}s: ${status}`);
+          
+          // Check for timeout
+          if (attempts >= maxAttempts) {
+            console.error("Run polling timed out after", maxAttempts, "attempts");
+            break;
+          }
+        } catch (pollError: any) {
+          console.error("Polling error:", pollError.message);
+          throw new Error(`polling_error: ${pollError.message || pollError}`);
+        }
       }
-      if (status !== "completed") throw new Error(`assistant_status: ${status}`);
+      
+      if (status !== "completed") {
+        console.error("Run did not complete successfully. Status:", status);
+        throw new Error(`assistant_status: ${status}`);
+      }
 
       // 5) Забираем последний ответ ассистента
+      console.log("Fetching messages from thread:", threadId);
       const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?order=desc&limit=20`, {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "OpenAI-Beta": "assistants=v2",
         },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_READ), // 10 second timeout for reading
       });
       const messagesText = await messagesRes.text();
-      if (!messagesRes.ok) throw new Error(`messages_fetch_failed: ${messagesText}`);
+      if (!messagesRes.ok) {
+        console.error("Failed to fetch messages:", messagesText);
+        throw new Error(`messages_fetch_failed: ${messagesText}`);
+      }
       const messagesData = JSON.parse(messagesText);
       const lastAssistantMessage = pickLatestAssistantMessage(messagesData);
 
@@ -235,6 +291,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         lastAssistantMessage?.content?.[0]?.text?.value ??
         "Ассистент не дал ответа.";
 
+      console.log("Successfully retrieved assistant response from thread:", threadId);
+      
       return res.status(200).json({
         ok: true,
         message: { role: "assistant", content },
@@ -242,6 +300,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
         debug: body.debug ? { contentParts } : undefined,
       });
     } catch (e: any) {
+      // Log the error for debugging
+      console.error("Error in assistants API:", e);
+      
+      // Handle timeout errors specifically
+      if (e.name === 'AbortError') {
+        return res.status(200).json({
+          ok: false,
+          error: { 
+            message: "request_timeout", 
+            detail: "Request to OpenAI API timed out" 
+          }
+        });
+      }
+      
       // ФОЛБЭК НА CHAT COMPLETIONS — чтобы UI отвечал
       const err = e instanceof Error ? e.message : String(e);
       try {
@@ -263,9 +335,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<OkPayload | Err
 
   // ---------------- Чистый Chat Completions ----------------
   try {
+    console.log("Using fallback chat completions");
     const fallback = await chatCompletionsFallback(body);
     return res.status(200).json({ ok: true, message: fallback });
   } catch (e) {
+    console.error("Error in fallback chat completions:", e);
     const err = normalizeError(e);
     return res.status(200).json({ ok: false, error: err });
   }

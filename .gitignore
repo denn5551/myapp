@@ -2,7 +2,8 @@ node_modules/
 .env
 .next/
 dist/
-data/users.db.env.local
+data/users.db
+.env.local
 
 # env files
 .env*
