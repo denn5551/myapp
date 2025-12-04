@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useRef, useState, ReactElement } from "react
 import Link from "next/link";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
-import { Trash2, Heart, HeartOff, HelpCircle, User } from "lucide-react";
+import { Trash2 as TrashIcon, Heart, HeartOff, HelpCircle, User } from "lucide-react"; // или "@heroicons/react/24/outline" и т.п.
+
 
 import Sidebar from "@/components/Sidebar";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -206,58 +207,69 @@ function renderMessageContent(content: string) {
       <main className="flex-1 flex flex-col">
         {/* Хедер: сервисные иконки справа */}
 
-<header className="sticky top-0 z-10 bg-base-100 border-b border-base-200">
+<header style={{
+    borderBottom: "1.5px solid #e5e7eb", // или другой светло-серый #dde2e8, #f1f5f9 и т.д.
+    boxShadow: "0 2px 8px rgba(30,41,59,0.05)"
+  }} className="sticky top-0 z-10 bg-base-100 border-b">
   <div className="max-w-[900px] mx-auto px-4 py-3 flex items-center justify-between">
     <h1 className="text-lg font-semibold">Чат с {assistantName || "ассистентом"}</h1>
 
-    <div className="flex items-center gap-3">
-      <button
-        title="Очистить чат"
-        onClick={handleClearChat}
-        className="icon-btn text-base-content/80 hover:text-error focus:outline-none"
-      >
-        <Trash2 className="w-5 h-5" />
-      </button>
+<div className="flex items-center gap-3">
+  {/* Кнопка "Очистить" */}
+  <button
+    title="Очистить чат"
+    onClick={handleClearChat}
+    className="icon-btn"
+    aria-label="Очистить"
+  >
+    <TrashIcon className="w-5 h-5" />
+  </button>
 
-      {!!id && (
-        <FavoriteButton
-          agentId={id}
-          initialIsFavorite={isFavorite}
-          iconOn={<Heart className="w-5 h-5 text-primary" />}
-          iconOff={<HeartOff className="w-5 h-5 opacity-70" />}
-        />
-      )}
+  {/* Кнопка "Избранное" */}
+  {id && (
+    <button className="icon-btn" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}>
+      {isFavorite
+        ? <Heart className="w-5 h-5 text-primary" />
+        : <HeartOff className="w-5 h-5 opacity-70" />}
+    </button>
+  )}
 
-      {!!assistantDescription && (
-        <details className="dropdown">
-          <summary className="list-none cursor-pointer icon-btn text-base-content/80 hover:text-primary focus:outline-none">
-            <HelpCircle className="w-5 h-5" />
-          </summary>
-          <div className="dropdown-content z-[1] w-80 p-3 bg-base-100 rounded-xl shadow">
-            <div className="text-sm whitespace-pre-wrap">{assistantDescription}</div>
-          </div>
-        </details>
-      )}
-
-      <div className="dropdown dropdown-end">
-        <div
-          tabIndex={0}
-          role="button"
-          onClick={toggleUserMenu}
-          className="avatar placeholder focus:outline-none"
-        >
-          <div className="w-8 rounded-full bg-neutral text-neutral-content flex items-center justify-center">
-            <User className="w-4 h-4" />
-          </div>
-        </div>
-        {userMenuOpen && (
-          <ul className="dropdown-content z-[1] menu p-2 shadow bg-base-200 rounded-box w-44">
-            <li><Link href="/profile">Профиль</Link></li>
-            <li><button onClick={handleLogout}>Выйти</button></li>
-          </ul>
-        )}
+  {/* Выпадающее описание */}
+  {!!assistantDescription && (
+    <details className="icon-btn" style={{padding: 0}}>
+      <summary className="list-none cursor-pointer icon-btn" style={{padding: 0}}>
+        <HelpCircle className="w-5 h-5" />
+      </summary>
+      <div className="dropdown-content z-[1] min-w-[220px] max-w-xs bg-base-100 rounded-xl shadow p-3 mt-2">
+        <div className="text-sm whitespace-pre-wrap">{assistantDescription}</div>
       </div>
-    </div>
+    </details>
+  )}
+
+  {/* Пользовательское меню */}
+  <div className="dropdown dropdown-end">
+    <button
+      tabIndex={0}
+      type="button"
+      onClick={toggleUserMenu}
+      className="icon-btn avatar placeholder"
+    >
+      <div className="w-8 h-8 rounded-full bg-neutral text-neutral-content flex items-center justify-center">
+        <User className="w-4 h-4" />
+      </div>
+    </button>
+    {userMenuOpen && (
+      <ul className="dropdown-content z-[2] menu p-2 shadow bg-base-200 rounded-box w-44 mt-2">
+        <li><Link href="/profile">Профиль</Link></li>
+        <li>
+          <button onClick={handleLogout}>Выйти</button>
+        </li>
+      </ul>
+    )}
+  </div>
+</div>
+
+
   </div>
 </header>
         {/* Тело чата */}
@@ -288,27 +300,21 @@ function renderMessageContent(content: string) {
 
 
 {/* ОДНО сообщение истории (DaisyUI chat) */}
-<div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-  <div className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}>
-    <div className="chat-image avatar">
-      <div className="w-9 md:w-10 rounded-full bg-base-300 flex items-center justify-center">
-        {msg.role === "user" ? (
-          <span className="text-base">👤</span>
-        ) : (
-          <span className="text-base">🤖</span>
-        )}
-      </div>
-    </div>
-
-    <div className="chat-header mb-1 text-xs opacity-70">
-      {msg.role === "user" ? "Вы" : assistantName}
-    </div>
-
-    <div className={`chat-bubble ${msg.role === "user" ? "bg-primary text-primary-content" : "bg-base-200 text-base-content"}`}>
-      {renderMessageContent(
-        msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/\S+/g, "").trim()
-      )}
-    </div>
+<div className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}>
+  <div
+    className="chat-bubble"
+    style={{
+      whiteSpace: 'pre-line',
+      wordBreak: 'break-word',
+      overflowWrap: 'anywhere',
+      background: msg.role === "user" ? "#daf0fe" : "#eeeeee",
+      color: "#3b3b3b",
+      maxWidth: "100%",
+    }}
+  >
+    {renderMessageContent(
+      msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/\S+/g, "").trim()
+    )}
   </div>
 </div>
                       </div>
