@@ -13,6 +13,7 @@ import ChatInput from "@/components/chat/ChatInput";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { isSubscriptionValid } from "@/lib/subscription";
 import { getAgentBySlug } from "@/lib/getAgentBySlug";
+import { formatAiMessage } from "@/utils/formatAiMessage";
 
 const disableThreadReuse = process.env.NEXT_PUBLIC_DISABLE_THREAD_REUSE === "true";
 const debugMode = process.env.NEXT_PUBLIC_DEBUG === "true";
@@ -33,16 +34,7 @@ const BotIcon = () => (
 
 type PageProps = { slug: string };
 
-// Простой рендер текста с абзацами.
-function renderMessage(text: string): ReactElement[] {
-  return text
-    .split(/\n\s*\n/)
-    .map((p, i) => (
-      <p key={i} className="leading-6 whitespace-pre-wrap">
-        {p}
-      </p>
-    ));
-}
+
 
 export default function AgentChat({ slug }: PageProps) {
   const router = useRouter();
@@ -177,22 +169,7 @@ export default function AgentChat({ slug }: PageProps) {
     }
   };
 
-/** 
- * Рендер содержимого сообщения (текст, markdown, ссылки и т.п.)
- * Можно расширить, если потом захочешь поддерживать изображения или HTML
- */
-function renderMessageContent(content: string) {
-  if (!content) return null;
 
-  // Если есть markdown (жирный, курсив) — можно потом заменить на markdown-парсер.
-  const lines = content.split(/\n+/).map((line, i) => (
-    <p key={i} className="whitespace-pre-wrap leading-relaxed break-words">
-      {line}
-    </p>
-  ));
-
-  return <div>{lines}</div>;
-}
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -312,7 +289,7 @@ function renderMessageContent(content: string) {
       maxWidth: "100%",
     }}
   >
-    {renderMessageContent(
+    {formatAiMessage(
       msg.content.replace(/\[file\]\s*[^:]+:\s*https?:\/\/\S+/g, "").trim()
     )}
   </div>
