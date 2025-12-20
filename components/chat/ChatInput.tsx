@@ -96,8 +96,15 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
 
     const userMessage = text.trim();
     
+    const currentAttachments = [...attachments]; // Сохраняем текущие вложения
+
     // Добавляем пользовательское сообщение сразу
     onMessageSent?.(true, undefined, undefined, userMessage);
+
+    // Очищаем текстовое поле и вложения сразу после отправки
+    setText("");
+    setAttachments([]);
+    requestAnimationFrame(autoresize);
     
     setBusy(true);
     setError(null);
@@ -107,9 +114,8 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
     if (plain) parts.push({ type: "text", text: plain });
 
     const linksForText: string[] = [];
-    for (const f of attachments) {
-      const isImg = f.isImage || /^image\//.test(f.type || "");
-      const url = absUrl(f.url);
+for (const f of currentAttachments) {
+      const isImg = f.isImage || /^image\/.*/.test(f.type || "");      const url = absUrl(f.url);
       if (isImg) {
         parts.push({ type: "image_url", image_url: { url } });
         linksForText.push(`[file] ${f.name}: ${url}`);
