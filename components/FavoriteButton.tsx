@@ -41,7 +41,10 @@ const FavoriteButton: React.FC<Props> = ({
     if (busy) return;
     setBusy(true);
     try {
-      const r = await fetch(`/api/agents/by-id/${agentId}/favorite`, { method: "POST" });
+      const r = await fetch(`/api/agents/by-id/${agentId}/favorite`, { 
+        method: "POST",
+        credentials: "include"
+      });
       const data = await r.json().catch(() => ({} as any));
       if (!r.ok || !data?.ok) throw new Error(data?.error || "toggle failed");
       setFav(Boolean(data.isFavorite));
