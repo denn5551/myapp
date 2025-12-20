@@ -94,17 +94,28 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
   const handleSend = async () => {
     if (!assistantId || !canSend) return;
 
+    const userMessage = text.trim();
+    
+    const currentAttachments = [...attachments]; // Сохраняем текущие вложения
+
+    // Добавляем пользовательское сообщение сразу
+    onMessageSent?.(true, undefined, undefined, userMessage);
+
+    // Очищаем текстовое поле и вложения сразу после отправки
+    setText("");
+    setAttachments([]);
+    requestAnimationFrame(autoresize);
+    
     setBusy(true);
     setError(null);
 
     const parts: any[] = [];
-    const plain = text.trim();
+    const plain = userMessage;
     if (plain) parts.push({ type: "text", text: plain });
 
     const linksForText: string[] = [];
-    for (const f of attachments) {
-      const isImg = f.isImage || /^image\//.test(f.type || "");
-      const url = absUrl(f.url);
+for (const f of currentAttachments) {
+      const isImg = f.isImage || /^image\/.*/.test(f.type || "");      const url = absUrl(f.url);
       if (isImg) {
         parts.push({ type: "image_url", image_url: { url } });
         linksForText.push(`[file] ${f.name}: ${url}`);
@@ -134,14 +145,16 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
         throw new Error(data?.details?.message || data?.error || `HTTP ${res.status}`);
       }
 
-      const userMessage = text.trim();
+      // Обновляем thread_id и добавляем ответ ассистента
+      onMessageSent?.(true, data.thread_id, data?.message?.content, undefined);
+      
       setText("");
       setAttachments([]);
-      onMessageSent?.(true, data.thread_id, data?.message?.content, userMessage);
       requestAnimationFrame(autoresize);
     } catch (e: any) {
       setError(e?.message || "Ошибка отправки сообщения");
-      onMessageSent?.(false);
+      // Удаляем пользовательское сообщение в случае ошибки
+      onMessageSent?.(false, undefined, undefined, userMessage);
     } finally {
       setBusy(false);
     }

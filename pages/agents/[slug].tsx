@@ -334,6 +334,17 @@ export default function AgentChat({ slug }: PageProps) {
                       assistantId={id}
                       onMessageSent={(ok, newThreadId, response, userMessage) => {
                         if (!ok) {
+                          // Если передано userMessage и ok=false, это означает ошибку и нужно удалить пользовательское сообщение
+                          if (userMessage) {
+                            // Удаляем последнее пользовательское сообщение
+                            setMessages(prev => {
+                              const newMessages = [...prev];
+                              if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === "user" && newMessages[newMessages.length - 1].content === userMessage) {
+                                return newMessages.slice(0, -1);
+                              }
+                              return newMessages;
+                            });
+                          }
                           // Безопасно показываем алерт, не трогаем внешний вид инпута.
                           setErrorMsg("Ошибка отправки");
                           return;

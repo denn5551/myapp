@@ -9,7 +9,7 @@ export function formatAiMessage(text: string) {
 
   // Process the entire text to identify and group list items
   const lines = text.split(/\n/);
-  const elements: JSX.Element[] = [];
+  const elements: React.ReactElement[] = [];
   let listItems: string[] = [];
   let i = 0;
 
@@ -129,7 +129,7 @@ function processInlineFormatting(text: string) {
   const boldRegex = /\*\*(.*?)\*\*/g;
   let match;
   let lastIndex = 0;
-  const elements: (string | JSX.Element)[] = [];
+  const elements: (string | React.ReactElement)[] = [];
   
   while ((match = boldRegex.exec(text)) !== null) {
     // Add text before the match
