@@ -63,6 +63,7 @@ export default function AgentChat({ slug }: PageProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<any>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const id = agent?.assistantId || "";
   const storageKey = useMemo(() => `chat_${slug}`, [slug]);
@@ -204,23 +205,48 @@ export default function AgentChat({ slug }: PageProps) {
 
   {/* Кнопка "Избранное" */}
   {id && (
-    <button className="icon-btn" aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}>
-      {isFavorite
-        ? <Heart className="w-5 h-5 text-primary" />
-        : <HeartOff className="w-5 h-5 opacity-70" />}
-    </button>
+    <FavoriteButton
+      agentId={id}
+      initialIsFavorite={isFavorite}
+      onToggle={setIsFavorite}
+      className="icon-btn"
+      iconOn={<Heart className="w-5 h-5 text-primary" />}
+      iconOff={<HeartOff className="w-5 h-5 opacity-70" />}
+    />
   )}
 
   {/* Выпадающее описание */}
   {!!assistantDescription && (
-    <details className="icon-btn" style={{padding: 0}}>
-      <summary className="list-none cursor-pointer icon-btn" style={{padding: 0}}>
+    <div className="relative">
+      <button 
+        onClick={() => setShowHelpModal(true)}
+        className="icon-btn"
+        style={{ padding: 0 }}
+        aria-label="Как использовать"
+      >
         <HelpCircle className="w-5 h-5" />
-      </summary>
-      <div className="dropdown-content z-[1] min-w-[220px] max-w-xs bg-base-100 rounded-xl shadow p-3 mt-2">
-        <div className="text-sm whitespace-pre-wrap">{assistantDescription}</div>
-      </div>
-    </details>
+      </button>
+      
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4"
+             onClick={() => setShowHelpModal(false)}>
+          <div className="bg-base-100 rounded-xl shadow-lg p-6 max-w-md w-full"
+               onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="font-semibold text-lg">Как использовать</h3>
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                aria-label="Закрыть"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="text-sm whitespace-pre-wrap">{assistantDescription}</div>
+          </div>
+        </div>
+      )}
+    </div>
   )}
 
   {/* Пользовательское меню */}
