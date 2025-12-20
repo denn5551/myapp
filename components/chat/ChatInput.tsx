@@ -94,11 +94,16 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
   const handleSend = async () => {
     if (!assistantId || !canSend) return;
 
+    const userMessage = text.trim();
+    
+    // Добавляем пользовательское сообщение сразу
+    onMessageSent?.(true, undefined, undefined, userMessage);
+    
     setBusy(true);
     setError(null);
 
     const parts: any[] = [];
-    const plain = text.trim();
+    const plain = userMessage;
     if (plain) parts.push({ type: "text", text: plain });
 
     const linksForText: string[] = [];
@@ -134,14 +139,16 @@ const ChatInput: React.FC<Props> = ({ threadId, assistantId, onMessageSent }) =>
         throw new Error(data?.details?.message || data?.error || `HTTP ${res.status}`);
       }
 
-      const userMessage = text.trim();
+      // Обновляем thread_id и добавляем ответ ассистента
+      onMessageSent?.(true, data.thread_id, data?.message?.content, undefined);
+      
       setText("");
       setAttachments([]);
-      onMessageSent?.(true, data.thread_id, data?.message?.content, userMessage);
       requestAnimationFrame(autoresize);
     } catch (e: any) {
       setError(e?.message || "Ошибка отправки сообщения");
-      onMessageSent?.(false);
+      // Удаляем пользовательское сообщение в случае ошибки
+      onMessageSent?.(false, undefined, undefined, userMessage);
     } finally {
       setBusy(false);
     }
